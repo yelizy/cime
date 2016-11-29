@@ -65,6 +65,7 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     atm_domain_path = case.get_value("ATM_DOMAIN_PATH")
     datm_mode = case.get_value("DATM_MODE")
     datm_topo = case.get_value("DATM_TOPO")
+    datm_ozone = case.get_value("DATM_OZONE")
     datm_presaero = case.get_value("DATM_PRESAERO")
     datm_co2_tseries = case.get_value("DATM_CO2_TSERIES")
     atm_grid = case.get_value("ATM_GRID")
@@ -89,6 +90,7 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
     logger.info("DATM grid is %s", atm_grid)
     logger.info("DATM presaero mode is %s", datm_presaero)
     logger.info("DATM topo mode is %s", datm_topo)
+    logger.info("DATM ozone mode is %s", datm_ozone)
 
     #----------------------------------------------------
     # Clear out old data.
@@ -129,6 +131,9 @@ def _create_namelists(case, confdir, inst_string, infile, definition_file):
 
     if datm_topo != "none":
         streams.append("topo.%s" % datm_topo)
+
+    if datm_ozone != "none":
+        streams.append("ozone.%s" % datm_ozone)
 
     if datm_co2_tseries != "none":
         streams.append("co2tseries.%s" % datm_co2_tseries)

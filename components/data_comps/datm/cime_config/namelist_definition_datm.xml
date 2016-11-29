@@ -155,6 +155,8 @@
     presaero.rcp8.5
     presaero.cplhist
 
+    ozone.monthly
+
     topo.observed
 
     WW3
@@ -278,6 +280,7 @@
       <value stream="presaero.rcp6.0" grid="CLM_USRDAT">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="presaero.rcp8.5">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
+      <value stream="ozone.monthly">$DIN_LOC_ROOT/atm/datm7/ozone_forcing</value>
     </values>
   </entry>
 
@@ -383,6 +386,7 @@
       <value stream="presaero.rcp6.0" grid="CLM_USRDAT">aerosoldep_rcp6_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.rcp8.5">aerosoldep_rcp8.5_monthly_1849-2104_1.9x2.5_c100201.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
+      <value stream="ozone.monthly">MonthlyTransientRCP8.5O3.nc</value>
     </values>
   </entry>
 
@@ -509,6 +513,13 @@
         area    area
         mask    mask
       </value>
+      <value stream="ozone.monthly">
+        time   time
+        lon    lon
+        lat    lat
+        area   area
+        mask   mask
+      </value>
     </values>
   </entry>
 
@@ -604,6 +615,7 @@
       <value stream="presaero.rcp6.0" grid="CLM_USRDAT">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="presaero.rcp8.5">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
+      <value stream="ozone.monthly">$DIN_LOC_ROOT/atm/datm7/ozone_forcing</value>
     </values>
   </entry>
 
@@ -1369,6 +1381,7 @@
       <value stream="presaero.rcp6.0" grid="CLM_USRDAT">aerosoldep_rcp6_monthly_1849-2104_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.rcp8.5">aerosoldep_rcp8.5_monthly_1849-2104_1.9x2.5_c100201.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
+      <value stream="ozone.monthly">MonthlyTransientRCP8.5O3.nc</value>
     </values>
   </entry>
 
@@ -1714,7 +1727,10 @@
       <value stream="topo.observed">
         TOPO topo
       </value>
-    </values>
+      <value stream="ozone.monthly">
+        O3_SRF  ozone
+      </value>
+     </values>
   </entry>
 
   <entry id="strm_year_align">
@@ -1806,6 +1822,7 @@
       <value stream="presaero.rcp6.0">1849</value>
       <value stream="presaero.rcp8.5">1849</value>
       <value stream="topo.observed">1</value>
+      <value stream="ozone.monthly">$DATM_OZONE_YR_ALIGN</value>
     </values>
   </entry>
 
@@ -1899,6 +1916,7 @@
       <value stream="presaero.rcp6.0">1849</value>
       <value stream="presaero.rcp8.5">1849</value>
       <value stream="topo.observed">1</value>
+      <value stream="ozone.monthly">2006</value>
     </values>
   </entry>
 
@@ -1991,6 +2009,7 @@
       <value stream="presaero.rcp6.0">2104</value>
       <value stream="presaero.rcp8.5">2104</value>
       <value stream="topo.observed">1</value>
+      <value stream="ozone.monthly">2100</value>
     </values>
   </entry>
 
@@ -2297,6 +2316,7 @@
            steps, which is undesirable unless we truly want linear interpolation
            between multiple input values -->
       <value stream="topo.observed">lower</value>
+      <value stream="ozone.monthly">linear</value>
     </values>
   </entry>
 
