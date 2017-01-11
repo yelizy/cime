@@ -3,6 +3,8 @@ import shutil, glob, re
 from standard_script_setup import *
 from CIME.utils import run_cmd_no_fail, expect
 from CIME.case import Case
+from CIME.XML.machines import Machines
+from CIME.BuildTools.configure import configure
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +65,10 @@ def _main_func(description):
             os.makedirs(pio_dir)
         os.chdir(pio_dir)
         casetools = case.get_value("CASETOOLS")
+
+        gmake_cmd = case.get_value("GMAKE")
+
+        # This runs the pio cmake command from the cime case Makefile
         cmake_opts = "\" -D GENF90_PATH=$CIMEROOT/externals/genf90\""
         gmake_opts = "%s/Makefile CASEROOT=%s MODEL=%s USER_CMAKE_OPTS=%s "\
             "PIO_LIBDIR=%s CASETOOLS=%s PIO_VERSION=%s MPILIB=%s "\
@@ -71,15 +77,24 @@ def _main_func(description):
             %(pio_dir,caseroot,pio_model, cmake_opts, pio_dir, casetools,
               pio_version, mpilib, bldroot, exeroot, compiler, build_threaded,
               casetools)
-
-        gmake_cmd = case.get_value("GMAKE")
-        # This runs the pio cmake command from the cime case Makefile
         cmd = "%s %s"%(gmake_cmd, gmake_opts)
+        logger.info("PIO Building with : " + cmd)
         output = run_cmd_no_fail(cmd, from_dir=pio_dir)
+        logger.info(output)
+
+        # Make certain the environment is the same as used for building the other components
+        # configure(Machines(), pio_dir, ['CMake'], case.get_value('COMPILER'),
+        #           mpilib, False, case.get_value('OS'))
+
+        # Run CMake
+        pio_configure(case)
+
         # This runs the pio make command from the cmake generated Makefile
+        cmd = "%s -j %s"%(gmake_cmd, case.get_value("GMAKE_J"))
+        logger.info("\n\nPIO Building with : " + cmd)
+        output = run_cmd_no_fail(cmd, from_dir=pio_dir)
         logger.info(output)
-        output = run_cmd_no_fail("%s -j %s"%(gmake_cmd, case.get_value("GMAKE_J")), from_dir=pio_dir)
-        logger.info(output)
+
         if pio_version == 1:
             installed_lib = os.path.join(installpath,"lib","libpio.a")
             installed_lib_time = 0
@@ -145,6 +160,150 @@ def _main_func(description):
         valid_values += ",nothing"
         for comp in ("ATM","CPL","OCN","WAV","GLC","ICE","ROF","LND"):
             case.set_valid_values("%s_PIO_TYPENAME"%comp,valid_values)
+
+def _get_netcdf_paths(case):
+    """
+    Verfies a valid configuration of NetCDF installations is specified.
+    Returns a map with key value pairs corresponding to the CMake variables
+    used by PIO and the path of the installation
+    """
+    nc_def = case.get_value('NETCDF_PATH')
+    nc_c = case.get_value('NETCDF_C_PATH')
+    nc_f = case.get_value('NETCDF_FORTRAN_PATH')
+    if nc_c is not None:
+        assert(nc_f is not None,
+               'NETCDF_C_PATH defined without NETCDF_FORTRAN_PATH')
+        return {"NETCDF_DIR": nc_c, "NETCDF_Fortran_DIR": nc_f}
+    else:
+        assert(nc_f is None,
+               'NETCDF_FORTRAN_PATH defined without NETCDF_C_PATH')
+        assert(nc_def is not None,
+               ('No NetCDF library specified, please set NETCDF_PATH or ' +
+                'NETCDF_C_PATH and NETCDF_FORTRAN_PATH'))
+        return {"NETCDF_DIR": nc_def}
+
+def _get_include_paths(case, shared_path, mpilib):
+    """Enumerate the paths to include from"""
+    if case.get_value('USE_ESMF_LIB') == True:
+        esmf_dir = 'esmf'
+    else:
+        esmf_dir = 'noesmf'
+
+    cime_share = os.path.join(case.get_value('CIMEROOT'), 'share')
+
+    include_paths = ['.', os.path.join(shared_path, 'include'),
+                     os.path.join(shared_path, case.get_value('COMP_INTERFACE'),
+                                  esmf_dir, case.get_value('NINST_VALUE'), 'include'),
+                     os.path.join(cime_share, 'csm_share', 'shr'),
+                     os.path.join(cime_share, 'csm_share', 'include'),
+                     os.path.join(cime_share, 'shr_RandNum', 'include')]
+
+    # Append the NetCDF include directories
+    include_paths += [os.path.join(path, 'include') for path in _get_netcdf_paths(case).values()]
+
+    if case.get_value('MOD_NETCDF'):
+        include_paths.append(MOD_NETCDF)
+
+    with mpi_path as case.get_value('MPI_PATH'):
+        if 'mpi-serial' not in mpilib and mpi_path is not None:
+            include_paths.append(os.path.join(mpi_path, 'include'))
+
+    with pnetcdf_path as case.get_value('PNETCDF_PATH'):
+        if 'mpi-serial' not in mpilib and pnetcdf_path is not None:
+            include_paths.append(os.path.join(pnetcdf_path, 'include'))
+
+    def add_include(use_name, path_name):
+        """
+        First verifies that use_name and path_name are consistently set,
+        then appends the path to the list include_paths
+        """
+        if case.get_value(use_name) == True:
+            path = case.get_value(path_name)
+            assert(path is not None, use_name + " set to True without defining " + path_name)
+            include_paths.append(os.path.join(path, 'include'))
+
+    add_include('USE_PETSC', 'PETSC_PATH')
+    add_include('USE_TRILINOS', 'TRILINOS_PATH')
+    add_include('USE_ALBANY', 'ALBANY_PATH')
+
+    # Return the concatenated strings with -I prepended
+    return ''.join(['-I' + path + ' ' for path in include_paths])
+
+def _get_compile_flags(case):
+    cppdefs = '-D{os} -DCPR{compiler}'.format(os = case.get_value('OS'),
+                                              compiler = case.get_value('COMPILER').upper())
+    def cond_add_cpp_flag(var_name, true_val, flag, else_flag = None):
+        if case.get_value(var) == true_val:
+            cppdefs += ' ' + flag
+        elif else_flag is not None:
+            cppdefs += ' ' + else_flag
+
+    cond_add_cpp_flag('USE_ESMF_LIB', True, '-DUSE_ESMF_LIB')
+    cond_add_cpp_flag('COMP_INTERFACE', 'ESMF', '-DESMF_INTERFACE', '-DMCT_INTERFACE')
+    
+
+def pio_configure_options(case):
+    """Returns the CMake options for configuring PIO"""
+
+    # Determine where the other components/libraries have been built
+    if case.get_value('DEBUG') == True:
+        debug_dir = 'nodebug'
+    else:
+        debug_dir = 'debug'
+    if case.get_value('BUILD_THREADED') == True:
+        thread_dir = 'threads'
+    else:
+        thread_dir = 'nothreads'
+    mpilib = case.get_value('MPILIB')
+    shared_path = os.path.join(case.get_value('EXEROOT')
+                               case.get_value('COMPILER'),
+                               mpilib, debug_dir, thread_dir)
+    gptl_path = shared_path
+    pio_path = os.path.join(shared_dir, 'lib')
+
+    if case.get_value('COMP_INTERFACE') == 'ESMF':
+        cpp_defs = '-DESMF_INTERFACE'
+    else:
+        cpp_defs = '-DMCT_INTERFACE'
+
+    include_paths = _get_include_paths(case, shared_path, mpilib)
+
+    # Tell CMake where CMake modules are and genf90 is
+    cime_root = case.get_value('CIMEROOT')
+    cmake_module_path = os.path.join(cime_root, 'externals', 'CMake')
+    genf90_path = os.path.join(cime_root, 'externals', 'genf90')
+
+    cmake_opts = ('-D CMAKE_Fortran_FLAGS:STRING="{fortran_flags} {include}"  ' +
+                  '-D CMAKE_C_FLAGS:STRING="{c_flags} {include}"  ' +
+                  '-D CMAKE_CXX_FLAGS:STRING="{cxx_flags} {include}"  ' +
+                  '-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON  ' +
+                  '-D GPTL_PATH:STRING={gptl}  ' +
+                  '-D PIO_ENABLE_TESTS:BOOL=OFF  ' +
+                  '-D USER_CMAKE_MODULE_PATH:PATH={cmake_modules}  ' +
+                  '-D GENF90_PATH:PATH={genf90}  ')
+    cmake_opts.format(include = include_paths, gptl = gptl_path,
+                      cmake_modules = cmake_module_path, genf90 = genf90_path)
+
+    # Tell CMake where NetCDF C and Fortran are
+    for k, v in _get_netcdf_paths(case).items():
+        cmake_opts += '-D {cmake_var}:PATH="{path}"  '.format(cmake_var = k, path = v)
+
+    # Tell CMake if it should try to build with PIO
+    if case.get_value('PNETCDF_PATH') is None:
+        cmake_opts += '-D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE  '
+
+    # Use hints when reading and writing the NetCDF files for improved efficiency
+    with pio_fs_hints as case.get_value('PIO_FILESYSTEM_HINTS'):
+        if pio_fs_hints is not None:
+            cmake_opts += '-D PIO_FILESYSTEM_HINTS:STRING="{fs}" '.format(fs = pio_fs_hints)
+
+    return cmake_opts
+
+def pio_configure(case):
+    '''Configures PIO for building'''
+    cmake_opts = pio_configure_options(case)
+    
+    
 
 if (__name__ == "__main__"):
     _main_func(__doc__)
