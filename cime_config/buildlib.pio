@@ -171,15 +171,15 @@ def _get_netcdf_paths(case):
     nc_c = case.get_value('NETCDF_C_PATH')
     nc_f = case.get_value('NETCDF_FORTRAN_PATH')
     if nc_c is not None:
-        assert(nc_f is not None,
-               'NETCDF_C_PATH defined without NETCDF_FORTRAN_PATH')
+        assert nc_f is not None, \
+               'NETCDF_C_PATH defined without NETCDF_FORTRAN_PATH'
         return {"NETCDF_DIR": nc_c, "NETCDF_Fortran_DIR": nc_f}
     else:
-        assert(nc_f is None,
-               'NETCDF_FORTRAN_PATH defined without NETCDF_C_PATH')
-        assert(nc_def is not None,
+        assert nc_f is None, \
+               'NETCDF_FORTRAN_PATH defined without NETCDF_C_PATH'
+        assert nc_def is not None, \
                ('No NetCDF library specified, please set NETCDF_PATH or ' +
-                'NETCDF_C_PATH and NETCDF_FORTRAN_PATH'))
+                'NETCDF_C_PATH and NETCDF_FORTRAN_PATH')
         return {"NETCDF_DIR": nc_def}
 
 def _get_include_paths(case, shared_path, mpilib):
@@ -204,11 +204,11 @@ def _get_include_paths(case, shared_path, mpilib):
     if case.get_value('MOD_NETCDF'):
         include_paths.append(MOD_NETCDF)
 
-    with mpi_path as case.get_value('MPI_PATH'):
+    with case.get_value('MPI_PATH') as mpi_path:
         if 'mpi-serial' not in mpilib and mpi_path is not None:
             include_paths.append(os.path.join(mpi_path, 'include'))
 
-    with pnetcdf_path as case.get_value('PNETCDF_PATH'):
+    with case.get_value('PNETCDF_PATH') as  pnetcdf_path:
         if 'mpi-serial' not in mpilib and pnetcdf_path is not None:
             include_paths.append(os.path.join(pnetcdf_path, 'include'))
 
@@ -219,7 +219,7 @@ def _get_include_paths(case, shared_path, mpilib):
         """
         if case.get_value(use_name) == True:
             path = case.get_value(path_name)
-            assert(path is not None, use_name + " set to True without defining " + path_name)
+            assert path is not None, use_name + " set to True without defining " + path_name
             include_paths.append(os.path.join(path, 'include'))
 
     add_include('USE_PETSC', 'PETSC_PATH')
@@ -255,11 +255,10 @@ def pio_configure_options(case):
     else:
         thread_dir = 'nothreads'
     mpilib = case.get_value('MPILIB')
-    shared_path = os.path.join(case.get_value('EXEROOT')
+    shared_path = os.path.join(case.get_value('EXEROOT'),
                                case.get_value('COMPILER'),
                                mpilib, debug_dir, thread_dir)
-    gptl_path = shared_path
-    pio_path = os.path.join(shared_dir, 'lib')
+    pio_path = os.path.join(shared_path, 'lib')
 
     if case.get_value('COMP_INTERFACE') == 'ESMF':
         cpp_defs = '-DESMF_INTERFACE'
@@ -275,7 +274,6 @@ def pio_configure_options(case):
 
     cmake_opts = ('-D CMAKE_Fortran_FLAGS:STRING="{fortran_flags} {include}"  ' +
                   '-D CMAKE_C_FLAGS:STRING="{c_flags} {include}"  ' +
-                  '-D CMAKE_CXX_FLAGS:STRING="{cxx_flags} {include}"  ' +
                   '-D CMAKE_VERBOSE_MAKEFILE:BOOL=ON  ' +
                   '-D GPTL_PATH:STRING={gptl}  ' +
                   '-D PIO_ENABLE_TESTS:BOOL=OFF  ' +
@@ -293,7 +291,7 @@ def pio_configure_options(case):
         cmake_opts += '-D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE  '
 
     # Use hints when reading and writing the NetCDF files for improved efficiency
-    with pio_fs_hints as case.get_value('PIO_FILESYSTEM_HINTS'):
+    with case.get_value('PIO_FILESYSTEM_HINTS') as pio_fs_hints:
         if pio_fs_hints is not None:
             cmake_opts += '-D PIO_FILESYSTEM_HINTS:STRING="{fs}" '.format(fs = pio_fs_hints)
 
