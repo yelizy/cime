@@ -82,9 +82,9 @@
       <value NETCDF_SEPARATE="False">${NETCDF_PATH}</value>
       <value NETCDF_SEPARATE="True">${NETCDF_C_PATH}</value>
     </NetCDF_PATH>
-    <NetCDF_Fortran_PATH>
+    <NetCDF_Fortran_PATH NETCDF_SEPARATE="True">
       <type>PATH</type>
-      <value NETCDF_SEPARATE="True">${NETCDF_FORTRAN_PATH}</value>
+      <value>${NETCDF_FORTRAN_PATH}</value>
     </NetCDF_Fortran_PATH>
     <PnetCDF_PATH>
       <type>PATH</type>
