@@ -48,9 +48,12 @@
 </component>
 
 <component COMP="gptl">
+  <!-- Where to find the component -->
   <component_path>${CIMEROOT}/externals/pio2/src/gptl</component_path>
+  <!-- What build system the component uses -->
   <buildtool>CMake</buildtool>
   <configuration>
+    <!-- CMake variable specification -->
     <CMAKE_MODULE_PATH>
       <type>PATH</type>
       <value>${CIMEROOT}/externals/pio2/cmake</value>
@@ -59,6 +62,7 @@
 </component>
 
 <component COMP="pio1">
+  <!-- Before building pio1, gptl must be built -->
   <requires>gptl</requires>
   <component_path>${CIMEROOT}/externals/pio1</component_path>
   <buildtool>CMake</buildtool>
