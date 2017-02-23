@@ -14,82 +14,32 @@
 <component>
   <configuration buildtool="CMake">
     <!-- Variables to be defined for all CMake configurations -->
-    <CMAKE_Fortran_COMPILER>
-      <type>STRING</type>
-      <value>${MPIFC}</value>
-    </CMAKE_Fortran_COMPILER>
-    <CMAKE_C_COMPILER>
-      <type>STRING</type>
-      <value>${MPICC}</value>
-    </CMAKE_C_COMPILER>
-    <CMAKE_CXX_COMPILER>
-      <type>STRING</type>
-      <value>${MPICXX}</value>
-    </CMAKE_CXX_COMPILER>
+    <CMAKE_Fortran_COMPILER>${MPIFC}</CMAKE_Fortran_COMPILER>
+    <CMAKE_C_COMPILER>${MPICC}</CMAKE_C_COMPILER>
+    <CMAKE_CXX_COMPILER>${MPICXX}</CMAKE_CXX_COMPILER>
 
-    <CMAKE_Fortran_FLAGS>
-      <type>STRING</type>
-      <value>${FFLAGS} ${FPPDEFS} ${INCLDIR}</value>
-    </CMAKE_Fortran_FLAGS>
-    <CMAKE_C_FLAGS>
-      <type>STRING</type>
-      <value>${CFLAGS} ${INCLDIR}</value>
-    </CMAKE_C_FLAGS>
-    <CMAKE_CXX_FLAGS>
-      <type>STRING</type>
-      <value>${CXXFLAGS} ${INCLDIR}</value>
-    </CMAKE_CXX_FLAGS>
+    <CMAKE_Fortran_FLAGS>${FFLAGS} ${FPPDEFS} ${INCLDIR}</CMAKE_Fortran_FLAGS>
+    <CMAKE_C_FLAGS>${CFLAGS} ${INCLDIR}</CMAKE_C_FLAGS>
+    <CMAKE_CXX_FLAGS>${CXXFLAGS} ${INCLDIR}</CMAKE_CXX_FLAGS>
 
-    <CMAKE_VERBOSE_MAKEFILE>
-      <type>BOOL</type>
-      <value>ON</value>
-    </CMAKE_VERBOSE_MAKEFILE>
-  </configuration>
-</component>
-
-<component COMP="gptl">
-  <!-- Where to find the component -->
-  <component_path>${CIMEROOT}/externals/pio2/src/gptl</component_path>
-  <!-- What build system the component uses -->
-  <buildtool>CMake</buildtool>
-  <configuration>
-    <!-- CMake variable specification -->
-    <CMAKE_MODULE_PATH>
-      <type>PATH</type>
-      <value>${CIMEROOT}/externals/pio2/cmake</value>
-    </CMAKE_MODULE_PATH>
+    <CMAKE_VERBOSE_MAKEFILE>ON</CMAKE_VERBOSE_MAKEFILE>
   </configuration>
 </component>
 
 <component COMP="pio1">
-  <!-- Before building pio1, gptl must be built -->
-  <requires>gptl</requires>
-  <component_path>${CIMEROOT}/externals/pio1</component_path>
   <buildtool>CMake</buildtool>
   <configuration>
-    <CMAKE_MODULE_PATH>
-      <type>PATH</type>
-      <value>${CIMEROOT}/externals/pio2/cmake</value>
-    </CMAKE_MODULE_PATH>
+    <CMAKE_MODULE_PATH>${CIMEROOT}/externals/pio2/cmake</CMAKE_MODULE_PATH>
 
-    <GPTL_PATH>
-      <type>PATH</type>
-      <value>${GPTL_PATH}</value>
-    </GPTL_PATH>
+    <GPTL_PATH DEBUG="True" BUILD_THREADED="True">${EXEROOT}/${COMPILER}/${MPILIB}/debug/threads</GPTL_PATH>
+    <GPTL_PATH DEBUG="True" BUILD_THREADED="False">${EXEROOT}/${COMPILER}/${MPILIB}/debug/nothreads</GPTL_PATH>
+    <GPTL_PATH DEBUG="False" BUILD_THREADED="True">${EXEROOT}/${COMPILER}/${MPILIB}/nodebug/threads</GPTL_PATH>
+    <GPTL_PATH DEBUG="False" BUILD_THREADED="False">${EXEROOT}/${COMPILER}/${MPILIB}/nodebug/nothreads</GPTL_PATH>
 
-    <NetCDF_PATH>
-      <type>PATH</type>
-      <value NETCDF_SEPARATE="False">${NETCDF_PATH}</value>
-      <value NETCDF_SEPARATE="True">${NETCDF_C_PATH}</value>
-    </NetCDF_PATH>
-    <NetCDF_Fortran_PATH NETCDF_SEPARATE="True">
-      <type>PATH</type>
-      <value>${NETCDF_FORTRAN_PATH}</value>
-    </NetCDF_Fortran_PATH>
-    <PnetCDF_PATH>
-      <type>PATH</type>
-      <value>${PNETCDF_PATH}</value>
-    </PnetCDF_PATH>
+    <NetCDF_PATH NETCDF_SEPARATE="False">${NETCDF_PATH}</NetCDF_PATH>
+    <NetCDF_PATH NETCDF_SEPARATE="True">${NETCDF_C_PATH}</NetCDF_PATH>
+    <NetCDF_Fortran_PATH NETCDF_SEPARATE="True">${NETCDF_FORTRAN_PATH}</NetCDF_Fortran_PATH>
+    <PnetCDF_PATH>${PNETCDF_PATH}</PnetCDF_PATH>
   </configuration>
 </component>
 
