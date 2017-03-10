@@ -521,6 +521,50 @@
     <desc></desc>
   </entry>
 
+  <entry id="DOUT_L_MODE">
+    <type>char</type>
+    <valid_values>copy_dirs_hsi, copy_files_hsi, copy_dirs_ssh, copy_dirs_local</valid_values>
+    <default_value>copy_dirs_hsi</default_value>
+    <group>run_data_archive</group>
+    <file>env_run.xml</file>
+    <desc>Copy mode to HPSS where copy_dirs_hsi recursively copies all directories and files
+    in the DOUT_S_ROOT location to DOUT_L_MSROOT; copy_files_hsi recursively copies
+    all directories and files but only those that don't already exist on HPSS and
+    if the checksum values differ; copy_dirs_ssh works the same as copy_files_hsi
+    but copies the files to a remote machine rather than HPSS; copy_dirs_local works
+    the same as copy_dirs_ssh but copies the files to another location on the
+    same local machine.</desc>
+  </entry>
+
+  <entry id="DOUT_L_DELETE_LOC_FILES">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_data_archive</group>
+    <file>env_run.xml</file>
+    <desc>Delete the local files in DOUT_S_ROOT location after
+    successful copy to HPSS.</desc>
+  </entry>
+
+  <entry id="DOUT_L_SSH_LOC">
+    <type>char</type>
+    <default_value>undefined</default_value>
+    <group>run_data_archive</group>
+    <file>env_run.xml</file>
+    <desc>Remote machine name to be used to store long term archive files rather than HPSS.
+    This option is used in conjunction with DOUT_L_MODE=copy_dirs_ssh.
+    NOTE: sshkeys to the remote login should be setup prior to running lt_archive.</desc>
+  </entry>
+
+  <entry id="DOUT_L_ARC_ROOT">
+    <type>char</type>
+    <default_value>undefined</default_value>
+    <group>run_data_archive</group>
+    <file>env_run.xml</file>
+    <desc>Local machine directory to be used to store long term archive files rather than HPSS.
+    This option is used in conjunction with DOUT_L_MODE=copy_dirs_local.</desc>
+  </entry>
+
   <entry id="SYSLOG_N">
     <type>integer</type>
     <default_value>900</default_value>

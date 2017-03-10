@@ -802,6 +802,30 @@ def does_file_have_string(filepath, text):
     """
     return os.path.isfile(filepath) and text in open(filepath).read()
 
+
+def is_last_process_complete(filepath, expect_text, fail_text ):
+    """
+    Search the filepath in reverse order looking for expect_text 
+    before finding fail_text.
+    """
+    complete = False
+    fh = open(filepath, 'r')
+    fb = fh.readlines()
+
+    rfb = ''.join(reversed(fb))
+
+    ret = ''.join(reversed(expect_text))
+    rft = ''.join(reversed(fail_text))
+
+    findex = re.search(rft, rfb).start()
+    eindex = re.search(ret, rfb).start()
+    
+    if findex > eindex:
+        compete = True
+
+    return complete
+
+
 def transform_vars(text, case=None, subgroup=None, check_members=None, default=None):
     """
     Do the variable substitution for any variables that need transforms
