@@ -6,6 +6,7 @@ import shutil, glob, re, os
 
 from CIME.XML.standard_module_setup import *
 from CIME.utils                     import expect, does_file_have_string, append_status, run_cmd
+from CIME.utils                     import is_last_process_complete
 from distutils.spawn                import find_executable
 
 import time
