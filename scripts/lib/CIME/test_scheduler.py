@@ -96,6 +96,7 @@ class TestScheduler(object):
         self._test_data     = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
         self._mpilib = mpilib  # allow override of default mpilib
         self._allow_baseline_overwrite  = allow_baseline_overwrite
+        self._completed_tests = 0
 
         self._machobj = Machines(machine=machine_name)
 
@@ -642,8 +643,15 @@ class TestScheduler(object):
         if status != TEST_PEND_STATUS:
             self._update_test_status(test, test_phase, status)
 
-        status_str = "Finished %s for test %s in %f seconds (%s)" %\
-                     (test_phase, test, elapsed_time, status)
+        if not self._work_remains(test):
+            self._completed_tests += 1
+            total = len(self._tests)
+            status_str = "Finished %s for test %s in %f seconds (%s). [COMPLETED %d of %d]" % \
+                (test_phase, test, elapsed_time, status, self._completed_tests, total)
+        else:
+            status_str = "Finished %s for test %s in %f seconds (%s)" % \
+                (test_phase, test, elapsed_time, status)
+
         if not success:
             status_str += "    Case dir: %s" % self._get_test_dir(test)
         logger.info(status_str)
@@ -729,6 +737,8 @@ class TestScheduler(object):
             template = template.replace("<PATH>",
                                         os.path.join(self._cime_root,"scripts","Tools")).replace\
                                         ("<TESTID>", self._test_id)
+            if not os.path.exists(self._test_root):
+                os.makedirs(self._test_root)
             cs_status_file = os.path.join(self._test_root, "cs.status.%s" % self._test_id)
             with open(cs_status_file, "w") as fd:
                 fd.write(template)
@@ -775,12 +785,12 @@ class TestScheduler(object):
         for test in self._tests:
             logger.info( "  %s"% test)
 
+        # Setup cs files
+        self._setup_cs_files()
+
         self._producer()
 
         expect(threading.active_count() == 1, "Leftover threads?")
-
-        # Setup cs files
-        self._setup_cs_files()
 
         wait_handles_report = False
         if not self._no_run and not self._no_batch:

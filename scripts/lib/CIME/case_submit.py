@@ -7,7 +7,7 @@ jobs.
 """
 import socket
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import expect, append_testlog, run_and_log_case_status
+from CIME.utils                     import expect, run_and_log_case_status
 from CIME.preview_namelists         import create_namelists
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.check_input_data          import check_all_input_data
@@ -66,6 +66,19 @@ def _submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
     logger.info("Submitted job ids %s" % job_ids)
 
 def submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
+    if case.get_value("TEST"):
+        caseroot = case.get_value("CASEROOT")
+        casebaseid = case.get_value("CASEBASEID")
+        # This should take care of the race condition where the submitted job
+        # begins immediately and tries to set RUN phase. We proactively assume
+        # a passed SUBMIT phase. If this state is already PASS, don't set it again
+        # because then we'll lose RUN phase info if it's there. This info is important
+        # for system_tests_common to know if it needs to reinitialize the test or not.
+        with TestStatus(test_dir=caseroot, test_name=casebaseid) as ts:
+            phase_status = ts.get_status(SUBMIT_PHASE)
+            if phase_status != TEST_PASS_STATUS:
+                ts.set_status(SUBMIT_PHASE, TEST_PASS_STATUS)
+
     try:
         functor = lambda: _submit(case, job, resubmit, no_batch, batch_args)
         run_and_log_case_status(functor, "case.submit", caseroot=case.get_value("CASEROOT"))
@@ -73,12 +86,8 @@ def submit(case, job=None, resubmit=False, no_batch=False, batch_args=None):
         # If something failed in the batch system, make sure to mark
         # the test as failed if we are running a test.
         if case.get_value("TEST"):
-            caseroot = case.get_value("CASEROOT")
-            casebaseid = case.get_value("CASEBASEID")
-            with TestStatus(test_dir=caseroot, test_name=casebaseid, lock=True) as ts:
-                ts.set_status(RUN_PHASE, TEST_FAIL_STATUS, comments="batch system failure")
-
-            append_testlog("Batch submission failed, TestStatus file changed to read-only", caseroot=caseroot)
+            with TestStatus(test_dir=caseroot, test_name=casebaseid) as ts:
+                ts.set_status(SUBMIT_PHASE, TEST_FAIL_STATUS)
 
         raise
 
