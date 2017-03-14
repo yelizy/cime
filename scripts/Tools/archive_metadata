@@ -10,7 +10,8 @@ Author: CSEG <cseg@cgd.ucar.edu>
 
 from standard_script_setup import *
 
-from CIME.case import Case
+from CIME.case       import Case
+from CIME.utils      import expect, append_status, is_last_process_complete
 
 import base64
 import datetime
@@ -75,11 +76,6 @@ _EXCLUDE_FILES = ['archive_metadata','case.build',
                  'lt_archive.sh', 'mkDepends', 'mkSrcfiles', 'save_provenance']
 
 _EXCLUDE_DIRS = ['archive_files','Tools']
-
-# status strings to search for in CaseStatus
-_run_msgs = ['Model did not complete','Run started','Run FAILED','Run SUCCESSFUL'];
-_sta_msgs = ['st_archiving starting','st_archiving completed']
-_lta_msgs = ['lt_archive starting','lt_archive completed']
 
 # -------------------------------------------------------------------------------
 # PasswordPromptAction class
@@ -213,48 +209,40 @@ def get_case_vars(case_dict, case):
 
 def get_case_status(case_dict):
     """ get_case_status
-    Parse the CaseStatus looking for status informatoin
+    Parse the CaseStatus and postprocessing log files
+    looking for status informatoin
 
     Arguments:
         case_dict (dict) - case dictionary to store XML variables
     """
     logger.debug('get_case_status')
-    
+
     # initialize status variables
     case_dict['run_status'] = 'Pending'
     case_dict['sta_status'] = 'Pending'
     case_dict['lta_status'] = 'Pending'
 
-    if os.path.exists(case_dict['CASEROOT']+'/CaseStatus'):
-        f = open(case_dict['CASEROOT']+'/CaseStatus','r')
-        cs = f.read()
-        f.close()
-
+    cs = case_dict['CASEROOT']+'/CaseStatus'
+    if os.path.exists(cs):
         # get the run status
-        li = 0
-        for run_msg in _run_msgs:
-            tmp_li = cs.rfind(run_msg)
-            if tmp_li > li:
-                li = tmp_li
-                case_dict['run_status'] = run_msg
+        status = is_last_process_complete(cs, "Run SUCCESSFUL", "Run FAILED")
+        case_dict['run_status'] = 'Complete'
+        if status is False:
+            case_dict['run_status'] = 'Fail'
 
-        # get the st_archive status
+        # get the STA status
         if case_dict['DOUT_S']:
-            li = 0
-            for sta_msg in _sta_msgs:
-                tmp_li = cs.rfind(sta_msg)
-                if tmp_li > li:
-                    li = tmp_li
-                    case_dict['sta_status'] = sta_msg
+            status = is_last_process_complete(cs, "st_archiving completed", "st_archiving started")
+            case_dict['sta_status'] = 'Complete'
+            if status is False:
+                case_dict['sta_status'] = 'Fail'
 
-        # get the lt_archive status
+        # get the LTA status
         if case_dict['DOUT_L_MS']:
-            li = 0
-            for lta_msg in _lta_msgs:
-                tmp_li = cs.rfind(lta_msg)
-                if tmp_li > li:
-                    li = tmp_li
-                    case_dict['lta_status'] = lta_msg
+            status = is_last_process_complete(cs, "lt_archiving completed", "lt_archiving started")
+            case_dict['lta_status'] = 'Complete'
+            if status is False:
+                case_dict['lta_status'] = 'Fail'
 
 # TODO get the postprocess status
 
@@ -832,12 +820,20 @@ def update_repo(ignoreLogs, case_dict, username, password):
 # ---------------------------------------------------------------------
 def get_timing_data(case_dict):
     """ get_timing_data
-    parse the timing data files and add information to the case_dict
+    parse the timing data file and add information to the case_dict
 
     Arguments:
         case_dict (dict) - case dictionary to store XML variables
     """
     logger.debug('get_timing_data')
+    if case_dict['run_status'] == 'Complete':
+        # check if timing file exists - use the most recent
+
+# START HERE...
+        
+
+        
+
     return case_dict
 
 
@@ -918,7 +914,7 @@ def main(options):
     if not options.ignoreTiming:
         case_dict = get_timing_data(case_dict)
 
-    # parse the CaseStatus into the case_dict 
+    # get the case status into the case_dict 
     case_dict = get_case_status(case_dict)
 
     # create a JSON file containing the case_dict with the date appended to the filename
