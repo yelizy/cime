@@ -130,8 +130,6 @@ class SystemTestsCommon(object):
         success = True
         start_time = time.time()
         try:
-            expect(self._test_status.get_status(MODEL_BUILD_PHASE) == TEST_PASS_STATUS,
-                   "Model was not built!")
             self._resetup_case(RUN_PHASE)
             with self._test_status:
                 self._test_status.set_status(RUN_PHASE, TEST_PEND_STATUS)
@@ -313,10 +311,8 @@ class SystemTestsCommon(object):
                 logging.warn("  Resetting %s for test" % key)
                 f1obj.set_value(key, f2obj.get_value(key, resolved=False))
             else:
-                print "Found difference in %s: case: %s original value %s" %\
+                print "WARNING: Found difference in test %s: case: %s original value %s" %\
                     (key, diffs[key][0], diffs[key][1])
-                print " Use option --force to run the test with this"\
-                    " value or --reset to reset to original"
                 return False
         return True
 
