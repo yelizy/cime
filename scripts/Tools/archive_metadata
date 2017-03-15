@@ -20,6 +20,7 @@ import difflib
 import filecmp
 import getpass
 import glob
+import gzip
 import json
 import io
 import re
@@ -204,13 +205,53 @@ def get_case_vars(case_dict, case):
 
 
 # ---------------------------------------------------------------------
+# get_pp_status
+# ---------------------------------------------------------------------
+
+def get_pp_status(case_dict):
+    """ get_case_status
+    Parse the postprocessing log files
+    looking for status information
+
+    Arguments:
+        case_dict (dict) - case dictionary to store XML variables
+    """
+    logger.debug('get_pp_status')
+
+    pp_log_dir =  os.path.join(case_dict['CASEROOT'],'postprocess','logs')
+    log_files = list()
+
+    # initialize status variables
+    comps = ['atm','ice','lnd','ocn']
+    case_dict['tseries_status'] = 'Pending'
+    case_dict['cmor_status'] = 'Pending'
+    for comp in comps:
+        case_dict[comp+'_avg_status'] = 'Pending'
+        case_dict[comp+'_diag_status'] = 'Pending'
+
+        if os.path.exists(pp_log_dir+'/'+comp+'_averages.log'):
+            log_files.append(os.path.join(pp_log_dir,comp+'_averages.log')
+
+        if os.path.exists(pp_log_dir+'/'+comp+'_diagnostics.log'):
+            log_files.append(os.path.join(pp_log_dir,comp+'_diagnostics.log')
+#START HERE
+    if os.path.exists(pp_log_dir+'/timeseries.log'):
+                                
+
+    # look for 'Successfully' at the end of log files
+    
+
+    return case_dict
+
+
+# ---------------------------------------------------------------------
 # get_case_status
 # ---------------------------------------------------------------------
 
 def get_case_status(case_dict):
     """ get_case_status
     Parse the CaseStatus and postprocessing log files
-    looking for status informatoin
+    looking for status information
 
     Arguments:
         case_dict (dict) - case dictionary to store XML variables
@@ -244,7 +285,11 @@ def get_case_status(case_dict):
             if status is False:
                 case_dict['lta_status'] = 'Fail'
 
-# TODO get the postprocess status
+    # check if the postprocess dir exists in the caseroot
+    case_dict['postprocess'] = False
+    if os.path.exists(case_dict['CASEROOT']+'/postprocess'):
+        case_dict['postprocess'] = True
+        get_pp_status(case_dict)
 
     return case_dict
 
@@ -826,13 +871,29 @@ def get_timing_data(case_dict):
         case_dict (dict) - case dictionary to store XML variables
     """
     logger.debug('get_timing_data')
+    # initialize the timing values in the dictionary
+    case_dict['model_cost'] = 'undefined'
+    case_dict['model_throughput'] = 'undefined'
+
     if case_dict['run_status'] == 'Complete':
-        # check if timing file exists - use the most recent
-
-# START HERE...
-        
-
-        
+        timing_dir = case_dict['CASEROOT']+'/timing'
+        last_time = ''
+        if os.path.exists(timing_dir):
+            # check if timing files exists
+            timing_file_pattern = 'cesm_timing.'+case_dict['CASE']
+            last_time = max(glob.glob(timing_dir+'/'+timing_file_pattern+'.*.gz'), key=os.path.getctime)
+            if len(last_time) > 0:
+                if 'gz' in last_time:
+                    # gunzip file first
+                    with gzip.open(last_time, 'rb') as f:
+                        file_content = f.readlines()
+                else:
+                    with open(last_time, 'r') as f:
+                        file_content = f.readlines()
+                        
+                # search the file content for matching lines
+                case_dict['model_cost'] = [line for line in file_content if 'Model Cost:' in line]
+                case_dict['model_throughput'] = [line for line in file_content if 'Model Throughput:' in line]
 
     return case_dict
 
@@ -905,6 +966,9 @@ def main(options):
                         'prior to running archive_metadata.',case_dict['CASE'])
             sys.exit(1)
 
+    # get the case status into the case_dict 
+    case_dict = get_case_status(case_dict)
+
     # create / update the cesm expdb repo with the caseroot files
     if not options.ignoreRepoUpdate:
         case_dict = update_repo(options.ignoreLogs, case_dict,
@@ -913,9 +977,6 @@ def main(options):
     # parse the timing data into the case_dict
     if not options.ignoreTiming:
         case_dict = get_timing_data(case_dict)
-
-    # get the case status into the case_dict 
-    case_dict = get_case_status(case_dict)
 
     # create a JSON file containing the case_dict with the date appended to the filename
     create_JSON(case_dict)
