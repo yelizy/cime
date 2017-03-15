@@ -523,14 +523,12 @@
 
   <entry id="DOUT_L_MODE">
     <type>char</type>
-    <valid_values>copy_dirs_hsi, copy_files_hsi, copy_dirs_ssh, copy_dirs_local</valid_values>
+    <valid_values>copy_dirs_hsi, copy_dirs_ssh, copy_dirs_local</valid_values>
     <default_value>copy_dirs_hsi</default_value>
     <group>run_data_archive</group>
     <file>env_run.xml</file>
     <desc>Copy mode to HPSS where copy_dirs_hsi recursively copies all directories and files
-    in the DOUT_S_ROOT location to DOUT_L_MSROOT; copy_files_hsi recursively copies
-    all directories and files but only those that don't already exist on HPSS and
-    if the checksum values differ; copy_dirs_ssh works the same as copy_files_hsi
+    in the DOUT_S_ROOT location to DOUT_L_MSROOT; copy_dirs_ssh works the same as copy_dirs_hsi
     but copies the files to a remote machine rather than HPSS; copy_dirs_local works
     the same as copy_dirs_ssh but copies the files to another location on the
     same local machine.</desc>
