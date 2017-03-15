@@ -34,9 +34,9 @@ def _copy_dirs_hsi(dout_s_root, dout_l_msroot, dout_l_hpss_accnt, dryrun,
     expect(hsi != None, "lt_archive: asked for copy_dirs_hsi - but hsi not found, check path")
  
     # check to see if copies of local files should be saved or not
-    saveFlag="-PR"
+    saveFlag="-PRU"
     if dout_l_delete:
-        saveFlag="-PRd"
+        saveFlag="-PRUd"
 
     os.chdir(dout_s_root)
     logger.info('cwd: %s' %os.getcwd())
@@ -66,40 +66,6 @@ def _copy_dirs_hsi(dout_s_root, dout_l_msroot, dout_l_hpss_accnt, dryrun,
 
 
 ###############################################################################
-IS THIS REALLY NECESSARY??
-def _copy_files_hsi(dout_s_root, dout_l_msroot, dout_l_hpss_accnt, dryrun,
-                dout_l_delete):
-###############################################################################
-
-    logger.debug('In copy_files_hsi...')
-
-    # intialize run_cmd return codes
-    stat = 0
-    msg = ''
-
-    # initialize success for return status
-    success = False
-    
-    # check if hsi exists in path
-    hsi = find_executable("hsi")
-    logger.info("hsi: %s " %hsi)
-    expect(hsi != None, "lt_archive: asked for copy_files_hsi - but hsi not found, check path")
-
-    os.chdir(dout_s_root)
-    logger.info('cwd: %s' %os.getcwd())
-
-    #*****
-    # copy_files_handler
-    #*****
-    def copy_files_handler:
-        # make the hsi directory
-        hsiArgs='"mkdir -p ' + dout_l_msroot + ' ; chmod +t ' + dout_l_msroot + ' ; cd ' + dout_l_msroot + ' ; put ' + saveFlag + ' *"'
-
-
-    return success, msg
-
-
-###############################################################################
 def _copy_dirs_ssh(dout_s_root, dout_l_msroot, dout_l_ssh_loc, dryrun,
                    dout_l_delete):
 ###############################################################################
@@ -120,6 +86,59 @@ def _copy_dirs_local(dout_s_root, dout_l_msroot, dout_l_arc_root, dryrun,
     success = True
     msg = ""
     
+    src = dout_s_root
+    dst = dout_l_msroot
+    errors = []
+
+    # check if dst exists; recursively create if exists
+    if not os.path.exists(dst):
+        if dryrun:
+            logger.info('dryrun: makedirs %s' %dst)
+        else:
+            os.makedirs(dst)
+
+    names = os.listdir(src)
+    for name in names:
+        srcname = os.path.join(src, name)
+        dstname = os.path.join(dst, name)
+        try:
+            if symlinks and os.path.islink(srcname):
+                linkto = os.readlink(srcname)
+                if dryrun:
+                    logger.info('dryrun: create symlink %s -> %s' %linkto %dstname)
+                else:
+                    os.symlink(linkto, dstname)
+            elif os.path.isdir(srcname):
+                if dryrun:
+                    logger.info('dryrun: calling copytree for %s to %s' %srcname %dstname)
+                else:
+                    copytree(srcname, dstname, symlinks, ignore=None)
+            else:
+                if dryrun:
+                    logger.info('dryrun: calling copy2 for %s to %s' %srcname %dstname)
+                else:
+                    copy2(srcname, dstname)
+        except (IOError, os.error) as why:
+            errors.append((srcname, dstname, str(why)))
+            # catch the Error from the recursive copytree so that we can
+            # continue with other files
+        except Error as err:
+            errors.extend(err.args[0])
+    try:
+        if dryrun:
+            logger.info('dryrun: calling copystat for %s to %s' %src %dst)
+        else:
+            copystat(src, dst)
+    except WindowsError:
+        # can't copy file access times on Windows
+        pass
+    except OSError as why:
+        errors.extend((src, dst, str(why)))
+
+    if errors:
+        msg = Error(errors)
+        success = False
+
     return success, msg
 
 
@@ -155,13 +174,15 @@ def case_lt_archive(case, dryrun, force):
         lid = time.strftime("%y%m%d-%H%M%S")
 
         msg = ""
+
+        # check if dout_s_root  exists
+        if not os.path.exists(dout_s_root):
+            expect(False, "lt_archive: DOUT_S_ROOT = '%s' does not exist" %dout_s_root)
+
         # perform archiving based on the mode requested
         if dout_l_mode == "copy_dirs_hsi":
            (success, msg) = _copy_dirs_hsi(dout_s_root, dout_l_msroot, dout_l_hpss_accnt, 
                                            dryrun, dout_l_delete)
-        elif dout_l_mode == "copy_files_hsi":
-           (success, msg) = _copy_files_hsi(dout_s_root, dout_l_msroot, dout_l_hpss_accnt, 
-                                        dryrun, dout_l_delete)
         elif dout_l_mode == "copy_dirs_ssh":
            (success, msg) = _copy_dirs_ssh(dout_s_root, dout_l_msroot, dout_l_ssh_loc, 
                                            dryrun, dout_l_delete)
