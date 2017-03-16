@@ -534,7 +534,7 @@
     same local machine.</desc>
   </entry>
 
-  <entry id="DOUT_L_DELETE_LOC_FILES">
+  <entry id="DOUT_L_DELETE_LOCAL_FILES">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -544,7 +544,7 @@
     successful copy to HPSS.</desc>
   </entry>
 
-  <entry id="DOUT_L_SSH_LOC">
+  <entry id="DOUT_L_SSH_MACHINE">
     <type>char</type>
     <default_value>undefined</default_value>
     <group>run_data_archive</group>
@@ -554,13 +554,15 @@
     NOTE: sshkeys to the remote login should be setup prior to running lt_archive.</desc>
   </entry>
 
-  <entry id="DOUT_L_ARC_ROOT">
+  <entry id="DOUT_L_SSH_LOGINNAME">
     <type>char</type>
-    <default_value>undefined</default_value>
+    <default_value>$USER</default_value>
     <group>run_data_archive</group>
     <file>env_run.xml</file>
-    <desc>Local machine directory to be used to store long term archive files rather than HPSS.
-    This option is used in conjunction with DOUT_L_MODE=copy_dirs_local.</desc>
+    <desc>Remote machine login name to be used to login to the machine where long term archive files
+    are copied rather than HPSS. This option is used in conjunction with DOUT_L_MODE=copy_dirs_ssh.
+    NOTE: sshkeys to the remote login should be setup prior to running lt_archive in mode 
+    DOUT_L_MODE=copy_dirs_ssh.</desc>
   </entry>
 
   <entry id="SYSLOG_N">
