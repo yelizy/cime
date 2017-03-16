@@ -66,9 +66,8 @@ def _copy_dirs_hsi(dout_s_root, dout_l_msroot, dout_l_hpss_accnt, dryrun,
 
 
 ###############################################################################
-# check_ssh_key
+def _check_ssh_key(dout_l_ssh_login, dout_l_ssh_mach):
 ###############################################################################
-def check_ssh_key(dout_l_ssh_login, dout_l_ssh_mach):
 
     ssh_key = True
     # check if ssh key is set for passwordless access to the remote machine
@@ -302,6 +301,7 @@ def case_lt_archive(case, dryrun, force):
         dout_l_mode = case.get_value("DOUT_L_MODE")
         dout_l_delete = case.get_value("DOUT_L_DELETE_LOCAL_FILES")
         dout_l_ssh_mach = case.get_value("DOUT_L_SSH_MACHINE")
+        dout_l_ssh_login = case.get_value("DOUT_L_SSH_LOGINNAME")
         lid = time.strftime("%y%m%d-%H%M%S")
 
         msg = ""
@@ -316,7 +316,7 @@ def case_lt_archive(case, dryrun, force):
                                            dryrun, dout_l_delete)
         elif dout_l_mode == "copy_dirs_ssh":
            (success, msg) = _copy_dirs_ssh(dout_s_root, dout_l_msroot, dout_l_ssh_mach,
-                                           dryrun, dout_l_delete)
+                                           dryrun, dout_l_delete, dout_l_ssh_login)
         elif dout_l_mode == "copy_dirs_local":
            (success, msg) = _copy_dirs_local(dout_s_root, dout_l_msroot, dryrun, dout_l_delete)
         else:
