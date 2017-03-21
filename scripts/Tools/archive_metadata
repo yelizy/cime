@@ -219,31 +219,28 @@ def get_pp_status(case_dict):
     logger.debug('get_pp_status')
 
     pp_log_dir =  os.path.join(case_dict['CASEROOT'],'postprocess','logs')
-    log_files = list()
 
     # initialize status variables
     comps = ['atm','ice','lnd','ocn']
     case_dict['tseries_status'] = 'Pending'
     case_dict['cmor_status'] = 'Pending'
+
     for comp in comps:
         case_dict[comp+'_avg_status'] = 'Pending'
         case_dict[comp+'_diag_status'] = 'Pending'
 
         if os.path.exists(pp_log_dir+'/'+comp+'_averages.log'):
-            log_files.append(os.path.join(pp_log_dir,comp+'_averages.log'))
+            log_file = os.path.join(pp_log_dir,comp+'_averages.log')
+#START HERE checking log files...            
 
         if os.path.exists(pp_log_dir+'/'+comp+'_diagnostics.log'):
-            log_files.append(os.path.join(pp_log_dir,comp+'_diagnostics.log'))
+            log_file = os.path.join(pp_log_dir,comp+'_diagnostics.log')
 
     if os.path.exists(pp_log_dir+'/timeseries.log'):
-      log_files.append(os.path.join(pp_log_dir,'timeseries.log'))
+      log_file = os.path.join(pp_log_dir,'timeseries.log')
 
     if os.path.exists(pp_log_dir+'/cmor.log'):
-      log_files.append(os.path.join(pp_log_dir,'cmor.log'))
-
-    # look for 'Successfully' at the end of log files
-    for log_file in log_files:
-        
+      log_file = os.path.join(pp_log_dir,'cmor.log')
 
     return case_dict
 
