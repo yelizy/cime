@@ -42,7 +42,7 @@ _JSON_expdb_url = 'https://csegwebdev.cgd.ucar.edu/expdb2.0/cgi-bin/processJSON.
 _query_expdb_url = 'https://csegwebdev.cgd.ucar.edu/expdb2.0/cgi-bin/query.cgi'
 _SVN_expdb_url = 'https://svn-cesm2-expdb.cgd.ucar.edu'
 
-_exp_types = ['CMIP6','production','development','testing']
+_exp_types = ['CMIP6','production','development']
 
 _XML_vars = ['CASE','COMPILER','COMPSET','CONTINUE_RUN','DOUT_L_MS',
              'DOUT_L_MSROOT','DOUT_S','DOUT_S_ROOT','GRID',
@@ -203,7 +203,6 @@ def get_case_vars(case_dict, case):
 
     return case_dict
 
-
 # ---------------------------------------------------------------------
 # get_pp_status
 # ---------------------------------------------------------------------
@@ -218,12 +217,26 @@ def get_pp_status(case_dict):
     """
     logger.debug('get_pp_status')
 
-    pp_log_dir =  os.path.join(case_dict['CASEROOT'],'postprocess','logs')
-
     # initialize status variables
+    msg_avg = dict()
+    msg_diags = dict()
     comps = ['atm','ice','lnd','ocn']
     case_dict['tseries_status'] = 'Pending'
     case_dict['cmor_status'] = 'Pending'
+
+    pp_log_dir =  os.path.join(case_dict['CASEROOT'],'postprocess','logs')
+
+    msg_avg['atm'] = "Successfully completed generating atmosphere climatology averages"
+    msg_diags['atm'] = "Successfully completed generating atmosphere diagnostics"
+
+    msg_avg['ice'] = "Successfully completed generating ice climatology averages"
+    msg_diags['ice'] = "Successfully completed generating ice diagnostics"
+
+    msg_avg['lnd'] = "Successfully completed generating land climatology averages"
+    msg_diags['lnd'] = "Successfully completed generating land diagnostics"
+
+    msg_avg['ocn'] = "Successfully completed generating ocean climatology averages"
+    msg_diags['ocn'] = "Successfully completed generating ocean diagnostics"
 
     for comp in comps:
         case_dict[comp+'_avg_status'] = 'Pending'
@@ -231,16 +244,31 @@ def get_pp_status(case_dict):
 
         if os.path.exists(pp_log_dir+'/'+comp+'_averages.log'):
             log_file = os.path.join(pp_log_dir,comp+'_averages.log')
-#START HERE checking log files...            
+            if (is_last_process_complete(log_file, msg_avg[comp], 
+                                         'Average list complies with standards.')):
+                case_dict[comp+'_avg_status'] = 'Completed'
+            else:
+                case_dict[comp+'_avg_status'] = 'Unknown'
 
         if os.path.exists(pp_log_dir+'/'+comp+'_diagnostics.log'):
             log_file = os.path.join(pp_log_dir,comp+'_diagnostics.log')
+            if (is_last_process_complete(log_file, msg_diags[comp], 'ncks version')):
+                case_dict[comp+'_diag_status'] = 'Completed'
+            else:
+                case_dict[comp+'_diag_status'] = 'Unknown'
 
     if os.path.exists(pp_log_dir+'/timeseries.log'):
       log_file = os.path.join(pp_log_dir,'timeseries.log')
+      if (is_last_process_complete(log_file, 'Successfully completed generating variable time-series files', 
+                                   'cesm_tseries_generator.py')):
+          case_dict['tseries_status'] = 'Completed'
+      else:
+          case_dict['tseries_status'] = 'Unknown'
+              
 
     if os.path.exists(pp_log_dir+'/cmor.log'):
       log_file = os.path.join(pp_log_dir,'cmor.log')
+      #TODO - need to check the CMOR log when it becomes available
 
     return case_dict
 
@@ -267,30 +295,30 @@ def get_case_status(case_dict):
     cs = case_dict['CASEROOT']+'/CaseStatus'
     if os.path.exists(cs):
         # get the run status
-        status = is_last_process_complete(cs, "Run SUCCESSFUL", "Run FAILED")
+        status = is_last_process_complete(cs, "case.run success", "case.run starting")
         case_dict['run_status'] = 'Complete'
         if status is False:
-            case_dict['run_status'] = 'Fail'
+            case_dict['run_status'] = 'Unknown'
 
         # get the STA status
         if case_dict['DOUT_S']:
-            status = is_last_process_complete(cs, "st_archiving completed", "st_archiving started")
+            status = is_last_process_complete(cs, "st_archive success", "st_archive starting")
             case_dict['sta_status'] = 'Complete'
             if status is False:
-                case_dict['sta_status'] = 'Fail'
+                case_dict['sta_status'] = 'Unknown'
 
         # get the LTA status
         if case_dict['DOUT_L_MS']:
-            status = is_last_process_complete(cs, "lt_archiving completed", "lt_archiving started")
+            status = is_last_process_complete(cs, "lt_archive success", "lt_archive starting")
             case_dict['lta_status'] = 'Complete'
             if status is False:
-                case_dict['lta_status'] = 'Fail'
+                case_dict['lta_status'] = 'Unknown'
 
     # check if the postprocess dir exists in the caseroot
     case_dict['postprocess'] = False
     if os.path.exists(case_dict['CASEROOT']+'/postprocess'):
         case_dict['postprocess'] = True
-        get_pp_status(case_dict)
+        case_dict = get_pp_status(case_dict)
 
     return case_dict
 
@@ -935,6 +963,8 @@ def initialize_main(options):
     if options.dryrun:
         case_dict['dryrun'] = True
 
+    case_dict['archive_temp_dir'] = ''
+
     return case_dict, username, password
 
 # ---------------------------------------------------------------------
@@ -953,41 +983,65 @@ def main(options):
  
     # loop through the _XML_vars gathering values
     with Case(case_dict['CASEROOT'], read_only=True) as case:
-        case_dict = get_case_vars(case_dict, case)
+        if case_dict['dryrun']:
+            logger.info('Dryrun - calling get_case_vars')
+        else:
+            case_dict = get_case_vars(case_dict, case)
 
     # check that the casename is reserved in the expdb 
     # for CMIP6 experiments
     if (case_dict['expType'].lower() == 'cmip6'):
-        if not check_expdb_case(case_dict, username, password):
-            logger.info('Unable to archive CMIP6 metadata. '
-                        '"%s" casename does not exist in database. '
-                        'All CMIP6 experiments casenames must be '
-                        'reserved in the experiments database at URL: '
-                        '   https://csegweb.cgd.ucar.edu/expdb2.0'
-                        'prior to running archive_metadata.',case_dict['CASE'])
-            sys.exit(1)
+        if case_dict['dryrun']:
+            logger.info('Dryrun - calling check_expdb_case for CMIP6 experiment')
+        else:
+            if not check_expdb_case(case_dict, username, password):
+                logger.info('Unable to archive CMIP6 metadata. '
+                            '"%s" casename does not exist in database. '
+                            'All CMIP6 experiments casenames must be '
+                            'reserved in the experiments database at URL: '
+                            '   https://csegweb.cgd.ucar.edu/expdb2.0'
+                            'prior to running archive_metadata.',case_dict['CASE'])
+                sys.exit(1)
 
     # get the case status into the case_dict 
-    case_dict = get_case_status(case_dict)
+    if case_dict['dryrun']:
+        logger.info('Dryrun - calling get_case_status')
+    else:
+        case_dict = get_case_status(case_dict)
 
     # create / update the cesm expdb repo with the caseroot files
     if not options.ignoreRepoUpdate:
-        case_dict = update_repo(options.ignoreLogs, case_dict,
-                                username, password)
+        if case_dict['dryrun']:
+            logger.info('Dryrun - calling update_repo')
+        else:
+            case_dict = update_repo(options.ignoreLogs, case_dict,
+                                    username, password)
 
     # parse the timing data into the case_dict
     if not options.ignoreTiming:
-        case_dict = get_timing_data(case_dict)
+        if case_dict['dryrun']:
+            logger.info('Dryrun - calling get_timing_data')
+        else:
+            case_dict = get_timing_data(case_dict)
 
     # create a JSON file containing the case_dict with the date appended to the filename
-    create_JSON(case_dict)
+    if case_dict['dryrun']:
+        logger.info('Dryrun - calling create_JSON')
+    else:
+        create_JSON(case_dict)
 
     # post the JSON to the remote DB
-    post_JSON(case_dict, username, password)
+    if case_dict['dryrun']:
+        logger.info('Dryrun - calling post_JSON')
+    else:
+        post_JSON(case_dict, username, password)
 
     # clean-up the temporary archive files dir
-    if not options.ignoreRepoUpdate and os.path.exists(case_dict['archive_temp_dir']):
-        shutil.rmtree(case_dict['archive_temp_dir'])
+    if case_dict['dryrun']:
+        logger.info('Dryrun - calling rmtree for temporary directory')
+    else:
+        if not options.ignoreRepoUpdate and os.path.exists(case_dict['archive_temp_dir']):
+            shutil.rmtree(case_dict['archive_temp_dir'])
 
     logger.info('Successful completion of archive_metadata')
 
