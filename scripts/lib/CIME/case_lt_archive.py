@@ -84,6 +84,12 @@ def _check_ssh_key(dout_l_ssh_login, dout_l_ssh_mach):
     return ssh_key, msg
 
 ###############################################################################
+def cmd_exists(cmd):
+###############################################################################
+    return subprocess.call("type " + cmd, shell=True, 
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
+
+###############################################################################
 def _copy_dirs_ssh(dout_s_root, dout_l_msroot, dout_l_ssh_mach, dryrun,
                    dout_l_delete, dout_l_ssh_login):
 ###############################################################################
@@ -98,38 +104,56 @@ def _copy_dirs_ssh(dout_s_root, dout_l_msroot, dout_l_ssh_mach, dryrun,
         return ssh_key, msg
 
     src = dout_s_root
-    dst = dout_l_ssh_login+'@'+dout_l_ssh_mach+':'+dout_l_msroot
+    dst = dout_l_ssh_login+'@'+dout_l_ssh_mach
     errors = []
 
-## START HERE replacing the commands
+    # check if dst exists; recursively create if does not exists
+    if dryrun:
+        logger.info('dryrun: make remote dirs %s' %dst)
+    else:
+        try:
+            output = subprocess.check_output( "ssh -q {0} 'mkdir -p {1}'".format(dst,dout_l_msroot), 
+                                              stderr=subprocess.STDOUT,
+                                              shell=True)
+        except subprocess.CalledProcessError as e:
+            msg = 'ERROR: unable to access remote directory {0} on remote host {1}. Check permissions'.format(dout_l_msroot,dst)
+            return False, msg
 
-    # check if dst exists; recursively create if exists
-    if not os.path.exists(dst):
-        if dryrun:
-            logger.info('dryrun: makedirs %s' %dst)
-        else:
-            os.makedirs(dst)
+    # check if special NASA pleiades scripts exist on the remote machine
+    try:
+
+# START HERE with call to cmd_exists on remote machine
+        cmd = "ssh -q {0} 'which cxfscp | wc -w'".format(dst)
+        output = subprocess.check_output( cmd,
+                                          stderr=subprocess.STDOUT,
+                                          shell=True)
+    except subprocess.CalledProcessError as e:
+        msg = 'ERROR: unable to access remote directory {0} on remote host {1}. Check permissions'.format(dout_l_msroot,dst)
+        return False, msg
+
 
     names = os.listdir(src)
     for name in names:
         srcname = os.path.join(src, name)
-        dstname = os.path.join(dst, name)
+        dstname = os.path.join(dout_l_msroot, name)
 
         try:
-            if symlinks and os.path.islink(srcname):
-                linkto = os.readlink(srcname)
+            if os.path.isdir(srcname):
                 if dryrun:
-                    logger.info('dryrun: create symlink %s -> %s' %linkto %dstname)
-                else:
-                    os.symlink(linkto, dstname)
-            elif os.path.isdir(srcname):
-                if dryrun:
-                    logger.info('dryrun: calling copytree for %s to %s' %srcname %dstname)
+                    logger.info('dryrun: calling cp -r for %s to %s' %srcname %dstname)
                     if dout_l_delete:
                         logger.info('dryrun: delete dir tree %s' %srcname)
                 else:
 
                     try:
+
+                        output = subprocess.check_output( "ssh -q {0} 'ir -p {1}'".format(dst,dout_l_msroot), 
+                                                          stderr=subprocess.STDOUT,
+                                                          shell=True)
+                    except subprocess.CalledProcessError as e:
+                        msg += 'ERROR: unable to access remote directory {0} on remote host {1}. Check permissions'.format(dout_l_msroot,dst)
+
+
                         shutil.copytree(srcname, dstname, symlinks, ignore=None)
                         # delete the local directory
                         if dout_l_delete:
