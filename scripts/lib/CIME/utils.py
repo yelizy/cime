@@ -994,14 +994,16 @@ def is_last_process_complete(filepath, expect_text, fail_text ):
 
     rfb = ''.join(reversed(fb))
 
-    ret = ''.join(reversed(expect_text))
-    rft = ''.join(reversed(fail_text))
+    findex = re.search(fail_text, rfb).start()
+    if findex is None:
+        findex = 0
 
-    findex = re.search(rft, rfb).start()
-    eindex = re.search(ret, rfb).start()
+    eindex = re.search(expect_text, rfb).start()
+    if eindex is None:
+        eindex = 0
     
     if findex > eindex:
-        compete = True
+        complete = True
 
     return complete
 
