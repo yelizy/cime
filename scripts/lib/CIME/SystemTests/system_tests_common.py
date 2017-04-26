@@ -130,8 +130,6 @@ class SystemTestsCommon(object):
         success = True
         start_time = time.time()
         try:
-            expect(self._test_status.get_status(MODEL_BUILD_PHASE) == TEST_PASS_STATUS,
-                   "Model was not built!")
             self._resetup_case(RUN_PHASE)
             with self._test_status:
                 self._test_status.set_status(RUN_PHASE, TEST_PEND_STATUS)
@@ -148,7 +146,13 @@ class SystemTestsCommon(object):
 
         except:
             success = False
-            excmsg = "Exception during run:\n%s\n%s" % (sys.exc_info()[1], traceback.format_exc())
+            msg = sys.exc_info()[1].message
+            if "RUN FAIL" in msg:
+                # Don't want to print stacktrace for a model failure since that
+                # is not a CIME/infrastructure problem.
+                excmsg = msg
+            else:
+                excmsg = "Exception during run:\n%s\n%s" % (sys.exc_info()[1], traceback.format_exc())
             logger.warning(excmsg)
             append_testlog(excmsg)
 
@@ -193,6 +197,10 @@ class SystemTestsCommon(object):
         run_type    = self._case.get_value("RUN_TYPE")
         rest_option = self._case.get_value("REST_OPTION")
         rest_n      = self._case.get_value("REST_N")
+        rundir = self._case.get_value("RUNDIR")
+        # remove any cprnc output leftover from previous runs
+        for compout in glob.iglob(os.path.join(rundir,"*.cprnc.out")):
+            os.remove(compout)
         infostr     = "doing an %d %s %s test" % (stop_n, stop_option,run_type)
 
         if rest_option == "none" or rest_option == "never":
@@ -313,10 +321,8 @@ class SystemTestsCommon(object):
                 logging.warn("  Resetting %s for test" % key)
                 f1obj.set_value(key, f2obj.get_value(key, resolved=False))
             else:
-                print "Found difference in %s: case: %s original value %s" %\
+                print "WARNING: Found difference in test %s: case: %s original value %s" %\
                     (key, diffs[key][0], diffs[key][1])
-                print " Use option --force to run the test with this"\
-                    " value or --reset to reset to original"
                 return False
         return True
 
