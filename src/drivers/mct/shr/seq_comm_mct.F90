@@ -266,6 +266,7 @@ contains
 
     !! Initialize seq_comms elements
 
+    ! some seq_comms values will be different for every processor and component.
     do n = 1,ncomps
        seq_comms(n)%name = 'unknown'
        seq_comms(n)%suffix = ' '
@@ -303,6 +304,7 @@ contains
 
     ! Set ntasks, rootpe, pestride, nthreads for all components
 
+    ! if global rank is 0
     if (mype == 0) then
 
        !! Set up default component process parameters
@@ -363,10 +365,13 @@ contains
        esmf_logging = "ESMF_LOGKIND_NONE"
 
        ! Read namelist if it exists
+       ! this will typically be "drv_in"
 
        nu = shr_file_getUnit()
        open(nu, file=trim(nmlfile), status='old', iostat=ierr)
 
+       ! search through blocks in namelist file to find and
+       ! read ccsm_pes
        if (ierr == 0) then
           ierr = 1
           do while( ierr > 0 )
@@ -378,9 +383,13 @@ contains
 
     end if
 
-    !--- compute some other num_inst values
+    !--- compute some num_inst values
 
+    ! if one is data, can have different numbers of atmospheres
+    ! and oceans.
     num_inst_xao = max(num_inst_atm,num_inst_ocn)
+
+    ! because ice fractions can change in each inst, will need multiple fraction calculations.
     num_inst_frc = num_inst_ice
 
     !--- compute num_inst_min, num_inst_max
@@ -424,7 +433,11 @@ contains
        call shr_sys_abort(trim(subname)//' ERROR: num_inst inconsistent')
     endif
 
-    ! Initialize IDs
+    ! Initialize IDs for MCT
+    ! each component involved in coupling must have unique id.
+    ! Besides the basic components, cpl7 defines "joint components" which must also
+    ! have their own id.
+    ! "ALL" is all the instances of a component.
 
     count = 0
 
@@ -522,17 +535,21 @@ contains
        CPLESPID(n) = -1
     end do
 
+    ! sanity check
+    ! see "ncomps" definition above
     if (count /= ncomps) then
        write(logunit,*) trim(subname),' ERROR in ID count ',count,ncomps
        call shr_sys_abort(trim(subname)//' ERROR in ID count')
     endif
 
+    ! only on global root
     if (mype == 0) then
        !--- validation of inputs ---
        ! rootpes >= 0
 
        error_state = .false.
 
+       ! super paranoid
        if (atm_rootpe < 0) error_state = .true.
        if (lnd_rootpe < 0) error_state = .true.
        if (ice_rootpe < 0) error_state = .true.
@@ -550,9 +567,13 @@ contains
 
        !! Determine the process layout
        !!
-       !! We will assign atm_ntasks / num_inst_atm tasks to each atmosphere
+       !! For multiple instances, if the instances are to run concurrently,
+       !! then the pelayout atm_ntasks should give the total number of tasks needed
+       !! and we will assign atm_ntasks / num_inst_atm tasks to each atmosphere
        !! instance.  (This may lead to unallocated tasks if atm_ntasks is
        !! not an integer multiple of num_inst_atm.)
+       !! if instances run sequentially, then atm_ntasks is the task for each (any)
+       !! instance
 
        if (trim(atm_layout) == trim(layout_concurrent)) then
           atm_inst_tasks = atm_ntasks / num_inst_atm
@@ -717,7 +738,7 @@ contains
        cmin = cpl_rootpe
        cmax = cpl_rootpe + (cpl_ntasks-1)*cpl_pestride
        cstr = cpl_pestride
-    end if
+    end if  ! end global root work
 
     call shr_mpi_bcast(atm_nthreads,GLOBAL_COMM,'atm_nthreads')
     call shr_mpi_bcast(lnd_nthreads,GLOBAL_COMM,'lnd_nthreads')
@@ -994,6 +1015,7 @@ contains
     allocate(seq_comms(ID)%petlist(ntasks))
     seq_comms(ID)%petlist_allocated = .true.
     cnt = 0
+    ! set old esmf petlist
     do ntask = pelist(1,1),pelist(2,1),pelist(3,1)
         cnt = cnt + 1
         if (cnt > ntasks) then
@@ -1041,6 +1063,7 @@ contains
        seq_comms(ID)%nthreads = 1
     endif
 
+    ! the mpicom at this point only spans the tasks in component with ID
     if (mpicom /= MPI_COMM_NULL) then
        call mpi_comm_size(mpicom,seq_comms(ID)%npes,ierr)
        call shr_mpi_chkerr(ierr,subname//' mpi_comm_size')
