@@ -611,6 +611,8 @@ subroutine cime_pre_init1()
    !
    !   if (Global_Comm /= MPI_COMM_NULL) then
 
+   ! set up communicators for all component models and coupler-model pairs
+   ! define mpicom_GLOID
    call seq_comm_init(Global_Comm, NLFileName)
 
    !--- set task based threading counts ---
@@ -618,6 +620,10 @@ subroutine cime_pre_init1()
    call seq_comm_setnthreads(pethreads_GLOID)
 
    !--- get some general data ---
+   ! get the global comm, global root and max number of threads across
+   ! components
+   ! CHECK:  mpicom_GLOID should be equal to Global_Comm if not using async IO
+
    it=1
    call seq_comm_getinfo(GLOID,mpicom=mpicom_GLOID,&
         iamroot=iamroot_GLOID,nthreads=nthreads_GLOID)

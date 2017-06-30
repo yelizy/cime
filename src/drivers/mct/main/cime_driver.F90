@@ -33,6 +33,7 @@ program cime_driver
 
    !--------------------------------------------------------------------------
    ! Setup and initialize the communications and logging.
+   ! (init1 and init2 split up for ESMF caps)
    !--------------------------------------------------------------------------
    call cime_pre_init1()
 
@@ -40,6 +41,8 @@ program cime_driver
    ! Initialize ESMF.  This is done outside of the ESMF_INTERFACE ifdef
    ! because it is needed for the time manager, even if the ESMF_INTERFACE
    ! is not used.
+   ! Had to be called  here for the old ESMF caps.  May not need to be here if just
+   ! using time manager.
    !--------------------------------------------------------------------------
    call ESMF_Initialize(logkindflag=esmf_logfile_kind)
 
