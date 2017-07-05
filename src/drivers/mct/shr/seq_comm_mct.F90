@@ -227,6 +227,7 @@ contains
     integer :: rmin(num_inst_rof), rmax(num_inst_rof), rstr(num_inst_rof)
     integer :: emin(num_inst_esp), emax(num_inst_esp), estr(num_inst_esp)
     integer :: cmin,cmax,cstr
+    !  Not clear why pelist is 2D array
     integer :: pelist(3,1)       ! start, stop, stride for group
     integer, pointer :: comps(:) ! array with component ids
     integer, pointer :: comms(:) ! array with mpicoms
@@ -573,7 +574,12 @@ contains
        !! instance.  (This may lead to unallocated tasks if atm_ntasks is
        !! not an integer multiple of num_inst_atm.)
        !! if instances run sequentially, then atm_ntasks is the task for each (any)
-       !! instance
+       !! instance.
+       !! "sequential" layout of multiple instances is a very special use case
+       !! when running CAM with SP.
+       !! Make coupler think there are N atmospheres (N = # of subcolumns) so each subcolumn
+       !! can have a matching land instance.  Coupler gathers each piece of subcolumn info and
+       !! calls all lands at once.
 
        if (trim(atm_layout) == trim(layout_concurrent)) then
           atm_inst_tasks = atm_ntasks / num_inst_atm
@@ -1088,7 +1094,11 @@ contains
 
   end subroutine seq_comm_setcomm
 
-!---------------------------------------------------------
+!------------------------------------------------------------
+! Create a group and communicator that joins the ranks of ID1
+! and ID2.  Store information about how that communicator overlaps
+! with the originals.  Store all info in seq_comms
+!------------------------------------------------------------
   subroutine seq_comm_joincomm(ID1,ID2,ID,iname,inst,tinst)
 
     implicit none
@@ -1169,6 +1179,7 @@ contains
     seq_comms(ID)%mpicom = mpicom
     seq_comms(ID)%mpigrp = mpigrp
     seq_comms(ID)%nthreads = max(seq_comms(ID1)%nthreads,seq_comms(ID2)%nthreads)
+    ! in case nthreads was 0, reset to 1.
     seq_comms(ID)%nthreads = max(seq_comms(ID)%nthreads,1)
 
     if (mpicom /= MPI_COMM_NULL) then
@@ -1187,6 +1198,7 @@ contains
        seq_comms(ID)%iamroot = .false.
     endif
 
+    ! get the rank in the new communicator of the root in each of the coupler and component communicators
     allocate(pe_t1(1),pe_t2(1))
     pe_t1(1) = 0
     call mpi_group_translate_ranks(seq_comms(ID1)%mpigrp, 1, pe_t1, mpigrp, pe_t2, ierr)
@@ -1212,12 +1224,16 @@ contains
   end subroutine seq_comm_joincomm
 
 !---------------------------------------------------------
+! Create a communicator covering all the instances of one
+! component.  Store it in seq_comms
+!---------------------------------------------------------
   subroutine seq_comm_jcommarr(IDs,ID,iname,inst,tinst)
 
     implicit none
     integer,intent(IN) :: IDs(:) ! src id
     integer,intent(IN) :: ID     ! computed id
     character(len=*),intent(IN),optional :: iname  ! comm name
+    ! TODO:  below args are always 1.  When would they be gt 1?
     integer,intent(IN),optional :: inst
     integer,intent(IN),optional :: tinst
 
@@ -1254,12 +1270,14 @@ contains
        call shr_sys_abort()
     endif
 
+    ! create the mpigroup that is the union of all instances
     mpigrp = seq_comms(IDs(1))%mpigrp
     do n = 1,nids
        mpigrpp = mpigrp
        call mpi_group_union(mpigrpp,seq_comms(IDs(n))%mpigrp,mpigrp,ierr)
        call shr_mpi_chkerr(ierr,subname//' mpi_comm_union mpigrp')
     enddo
+    ! create a communicator on above group
     call mpi_comm_create(GLOBAL_COMM, mpigrp, mpicom, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_create mpigrp')
 
@@ -1292,6 +1310,7 @@ contains
        seq_comms(ID)%suffix = ' '
     endif
 
+    ! store the created communicator and group
     seq_comms(ID)%mpicom = mpicom
     seq_comms(ID)%mpigrp = mpigrp
 
@@ -1316,7 +1335,9 @@ contains
        seq_comms(ID)%iamroot = .false.
     endif
 
+    ! Don't need to know overlap with coupler
     seq_comms(ID)%cplpe = -1
+    ! overlap of coupler with one instance is not defined
     seq_comms(ID)%cmppe = -1
 
     if (seq_comms(ID)%iamroot) then
