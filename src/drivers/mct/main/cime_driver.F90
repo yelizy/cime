@@ -43,6 +43,7 @@ program cime_driver
    ! is not used.
    ! Had to be called  here for the old ESMF caps.  May not need to be here if just
    ! using time manager.
+   ! TODO:  Can now collapse pre_init1, ESMF_Init and pre_init2 in to one routine.
    !--------------------------------------------------------------------------
    call ESMF_Initialize(logkindflag=esmf_logfile_kind)
 
@@ -52,7 +53,7 @@ program cime_driver
    ! Timer initialization has to be after determination of the maximum number
    ! of threads used across all components, so called inside of
    ! cime_pre_init2, as are t_startf and t_stopf for CPL:INIT and
-   ! cime_pre_init2.
+   ! cime_pre_init2.  TODO:  check last statement.
    !--------------------------------------------------------------------------
    call cime_pre_init2()
 
