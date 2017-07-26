@@ -616,6 +616,7 @@ subroutine cime_pre_init1()
    call seq_comm_init(Global_Comm, NLFileName)
 
    !--- set task based threading counts ---
+   !  TODO:  how is threads in GLOID set?
    call seq_comm_getinfo(GLOID,pethreads=pethreads_GLOID,iam=iam_GLOID)
    call seq_comm_setnthreads(pethreads_GLOID)
 
@@ -624,11 +625,11 @@ subroutine cime_pre_init1()
    ! components
    ! CHECK:  mpicom_GLOID should be equal to Global_Comm if not using async IO
 
-   it=1
    call seq_comm_getinfo(GLOID,mpicom=mpicom_GLOID,&
         iamroot=iamroot_GLOID,nthreads=nthreads_GLOID)
    if (iamroot_GLOID) output_perf = .true.
 
+   it=1
    call seq_comm_getinfo(CPLID,mpicom=mpicom_CPLID,&
         iamroot=iamroot_CPLID,nthreads=nthreads_CPLID,&
         iam=comp_comm_iam(it))
@@ -800,6 +801,7 @@ end subroutine cime_pre_init1
 
 !===============================================================================
 !*******************************************************************************
+! Set module variables such as infodata.  Will be used in later init and run phases
 !===============================================================================
 
 subroutine cime_pre_init2()
@@ -1093,6 +1095,11 @@ subroutine cime_pre_init2()
    !  in ocn_in namelist. SCAM can reset the "present" flags for lnd,
    !  ocn, ice, rof, and flood.
    !----------------------------------------------------------
+   !
+   ! TODO:  latest CIME, aqua_planet sim can be done in 2 ways.
+   ! old way: an aquaplanet embedded in CAM.  Needs certain flags.
+   ! new way: data-ocean model can do aqua-planet.
+   ! moving forward:  single_column shouldn't need aqua_planet flag.
 
    if (.not.aqua_planet .and. single_column) then
       call seq_infodata_getData( infodata, &
@@ -1100,6 +1107,8 @@ subroutine cime_pre_init2()
 
       call seq_comm_getinfo(OCNID(ens1), mpicom=mpicom_OCNID)
 
+   !  you can pick a cell to run SCAM in at runtime.  Don't want to
+   ! run land if over ocean.  This will check if land, ocean, ice exists.
       call shr_scam_checkSurface(scmlon, scmlat, &
            OCNID(ens1), mpicom_OCNID,            &
            lnd_present=lnd_present,              &
@@ -1109,6 +1118,7 @@ subroutine cime_pre_init2()
            flood_present=flood_present,          &
            rofice_present=rofice_present)
 
+   ! place flags you just found in infodata object.
       call seq_infodata_putData(infodata,  &
            lnd_present=lnd_present,        &
            ocn_present=ocn_present,        &

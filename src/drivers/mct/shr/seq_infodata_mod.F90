@@ -78,6 +78,7 @@ MODULE seq_infodata_mod
    end type seq_pause_resume_type
 
    ! InputInfo derived type
+   ! some of these are read in by the namelist seq_infodata_parm in drv_in
 
    type seq_infodata_type
       private     ! This type is opaque
@@ -187,6 +188,11 @@ MODULE seq_infodata_mod
       logical                 :: esmf_map_flag   ! do we use esmf mapping
 
       !--- set via components and held fixed ---
+      ! 3 flavors:  present- is component even there.  Data model just sends.
+      !  prognostic - will send and recieve data.
+      ! routing info -  rofice_present means river model is sending ice which means
+      !  more fields will be coming from rof.  And ice runoff must be sent to land ice model
+      ! BUT:  ocnrof_prognostic:  tells ocean needs runoff data.
       logical                 :: atm_present     ! does component model exist
       logical                 :: atm_prognostic  ! does component model need input data from driver
       logical                 :: lnd_present     ! does component model exist
@@ -212,6 +218,8 @@ MODULE seq_infodata_mod
       logical                 :: esp_present     ! does component model exist
       logical                 :: esp_prognostic  ! does component model need input data from driver
       logical                 :: dead_comps      ! do we have dead models
+      ! these values get sent by components
+      ! for unstructured grids, ny=1 and nx is global number of grid points.
       integer(SHR_KIND_IN)    :: atm_nx          ! nx, ny of "2d" grid
       integer(SHR_KIND_IN)    :: atm_ny          ! nx, ny of "2d" grid
       integer(SHR_KIND_IN)    :: lnd_nx          ! nx, ny of "2d" grid
@@ -228,8 +236,16 @@ MODULE seq_infodata_mod
       integer(SHR_KIND_IN)    :: wav_ny          ! nx, ny of "2d" grid
 
       !--- set via components and may be time varying ---
+      !
+      ! atm tells coupler day to calculate albedos.  Helps keep coupler and atm
+      ! time of day in sync.
       real(SHR_KIND_R8)       :: nextsw_cday     ! calendar of next atm shortwave
       real(SHR_KIND_R8)       :: precip_fact     ! precip factor
+      ! keeps track of initialization phases.
+      ! atm has 2, others have 1.
+      ! In atm's second init phase, it gets the surface features (albedo) from
+      ! other model's inits.  Part of letting each model have one run phase
+      ! in the cpl7 run method.  Atm calls coupler in the middle of its sequence.
       integer(SHR_KIND_IN)    :: atm_phase       ! atm phase
       integer(SHR_KIND_IN)    :: lnd_phase       ! lnd phase
       integer(SHR_KIND_IN)    :: ice_phase       ! ice phase

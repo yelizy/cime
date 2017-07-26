@@ -227,7 +227,7 @@ contains
     integer :: rmin(num_inst_rof), rmax(num_inst_rof), rstr(num_inst_rof)
     integer :: emin(num_inst_esp), emax(num_inst_esp), estr(num_inst_esp)
     integer :: cmin,cmax,cstr
-    !  Not clear why pelist is 2D array
+    !  TODO Not clear why pelist is 2D array
     integer :: pelist(3,1)       ! start, stop, stride for group
     integer, pointer :: comps(:) ! array with component ids
     integer, pointer :: comms(:) ! array with mpicoms
@@ -889,6 +889,7 @@ contains
 
     ! compute each components root pe global id and broadcast so all pes have info
 
+    ! TODO:  Need to clarify what this is doing and why
     do n = 1,ncomps
        gloroot = -999
        if (seq_comms(n)%iamroot) gloroot = seq_comms(n)%gloiam
@@ -896,10 +897,12 @@ contains
                         trim(subname)//' gloroot',all=.true.)
     enddo
 
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
     ! Initialize MCT
 
     ! add up valid comps on local pe
 
+    !  count all the components except the ones doing async i/o
     myncomps = 0
     do n = 1,ncomps
        if (seq_comms(n)%mpicom /= MPI_COMM_NULL) then
@@ -930,9 +933,13 @@ contains
        call shr_sys_abort()
     endif
 
+    ! Tell MCT how many components are being coupled, their ids and communicators
     call mct_world_init(ncomps, GLOBAL_COMM, comms, comps)
 
     deallocate(comps,comms)
+ 
+    ! Finish Initialize MCT
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     ! ESMF logging (only has effect if ESMF libraries are used)
     call mpi_bcast(esmf_logging, len(esmf_logging), MPI_CHARACTER, 0, GLOBAL_COMM, ierr)
