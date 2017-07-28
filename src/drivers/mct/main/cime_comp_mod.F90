@@ -1172,6 +1172,7 @@ subroutine cime_init()
       call shr_sys_flush(logunit)
    endif
 
+   ! init the "comp" data structure for all instances of all components.
    call t_startf('comp_init_pre_all')
    call component_init_pre(atm, ATMID, CPLATMID, CPLALLATMID, infodata, ntype='atm')
    call component_init_pre(lnd, LNDID, CPLLNDID, CPLALLLNDID, infodata, ntype='lnd')
@@ -1183,9 +1184,9 @@ subroutine cime_init()
    call component_init_pre(esp, ESPID, CPLESPID, CPLALLESPID, infodata, ntype='esp')
    call t_stopf('comp_init_pre_all')
 
+   ! call the init process for components.  "cc" means its on the component processes
    call t_startf('comp_init_cc_atm')
    call t_adj_detailf(+2)
-
    call component_init_cc(Eclock_a, atm, atm_init, infodata, NLFilename)
    call t_adj_detailf(-2)
    call t_stopf('comp_init_cc_atm')
@@ -1411,6 +1412,13 @@ subroutine cime_init()
    glc_c2_ice = .false.
    wav_c2_ocn = .false.
 
+! datm or cam will both set atm_present = true but only
+! cam is prognostic
+! similar for other data models and "real" models
+! "present" will be false for a stub or for data model
+! in "null" mode.  Modes of data models can be changed
+! at runtime.
+
    if (atm_present) then
       if (lnd_prognostic) atm_c2_lnd = .true.
       if (ocn_prognostic) atm_c2_ocn = .true.
@@ -1435,9 +1443,9 @@ subroutine cime_init()
       if (wav_prognostic) ice_c2_wav = .true.
    endif
    if (rof_present) then
-      if (lnd_prognostic   ) rof_c2_lnd = .true.
-      if (ocnrof_prognostic) rof_c2_ocn = .true.
-      if (rofice_present .and. iceberg_prognostic) rof_c2_ice = .true.
+      if (lnd_prognostic   ) rof_c2_lnd = .true. ! full land wants runoff
+      if (ocnrof_prognostic) rof_c2_ocn = .true. ! full ocean wants runoff
+      if (rofice_present .and. iceberg_prognostic) rof_c2_ice = .true. ! new fields
    endif
    if (glc_present) then
       if (glclnd_present .and. lnd_prognostic) glc_c2_lnd = .true.

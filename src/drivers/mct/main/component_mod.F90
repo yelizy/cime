@@ -71,6 +71,7 @@ contains
 
   !===============================================================================
 
+  ! TODO:  can remove the "pre" because that was for ESMF
   subroutine component_init_pre(comp, compid, cplcompid, cplallcompid, &
        infodata, ntype)
 
@@ -102,7 +103,7 @@ contains
     call seq_comm_getinfo(CPLID, mpicom=mpicom_CPLID, iamroot=iamroot_CPLID, nthreads=nthreads_CPLID)
     iamin_CPLID = seq_comm_iamin(CPLID)
    
-    ! Initialize component type variables
+    ! Initialize component type variables for each instance
     do eci = 1,size(comp)
 
        comp(eci)%compid       = compid(eci)
@@ -123,10 +124,12 @@ contains
        comp(eci)%ntype              =  ntype(1:3)
        comp(eci)%oneletterid        =  ntype(1:1)
 
-       if (eci == 1) then
+       ! SUBTLE there is only one coupler and it expects all instances in an ensemble to
+       ! have the same gsmap and domain (grid and decomp)
+       if (eci == 1) then   ! ...so just allocate one instance...
           allocate(comp(1)%dom_cx)
           allocate(comp(1)%gsmap_cx)
-       else
+       else                 ! ..and have others point to it
           comp(eci)%dom_cx   => comp(1)%dom_cx 
           comp(eci)%gsmap_cx => comp(1)%gsmap_cx 
        end if
@@ -162,6 +165,8 @@ contains
 
   !===============================================================================
 
+  ! call the initialization process for a component
+  !
   subroutine component_init_cc(Eclock, comp, comp_init, infodata, NLFilename, &
        seq_flds_x2c_fluxes, seq_flds_c2x_fluxes)
 
@@ -215,10 +220,13 @@ contains
        if (.not. associated(comp(eci)%x2c_cc)) allocate(comp(eci)%x2c_cc)
        if (.not. associated(comp(eci)%c2x_cc)) allocate(comp(eci)%c2x_cc)
 
+       ! in the comp process for instance eci
        if (comp(eci)%iamin_compid .and. comp(eci)%present) then
           if (drv_threading) call seq_comm_setnthreads(comp(eci)%nthreads_compid)
           call shr_sys_flush(logunit)
           
+          ! correction for area difference between map file and live component.
+          ! TODO:  x2c_cc allocated above but not initialized.  What is size?
           if (present(seq_flds_x2c_fluxes)) then
              call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
           end if
