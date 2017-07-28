@@ -968,15 +968,11 @@ end subroutine mct_aVect_mult
 !
 ! !DESCRIPTION:
 !     Replace each field in {\tt av} by the product of that field and the
-!     field {\tt fld1} from input argument {\tt av1}.
+!     field {\tt vec}.
 !
-!     If optional argument {\tt bunlist} is present, only those attributes
-!     in {\tt bun} will be replaced.
+!     If optional argument {\tt avlist} is present, only those attributes
+!     in {\tt av} will be replaced.
 !
-!     If optional argument {\tt initav} is present, then the data in {\tt av}
-!     is replaced by the product of the data in {\tt initav} and {\tt fld1}
-!     from {\tt av1}. NOTE:  this assume {\tt initav} has the exact same
-!     attributes in the same order as {\tt av}.
 !
 !
 ! !REVISION HISTORY:
