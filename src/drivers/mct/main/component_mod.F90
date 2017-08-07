@@ -138,6 +138,7 @@ contains
        allocate(comp(eci)%dom_cc)
        allocate(comp(eci)%gsmap_cc)
        allocate(comp(eci)%cdata_cc)
+       ! duplicating some comp info in a data type used in other areas of the code.
        comp(eci)%cdata_cc%name     = 'cdata_'//ntype(1:1)//ntype(1:1)
        comp(eci)%cdata_cc%ID       =  comp(eci)%compid
        comp(eci)%cdata_cc%mpicom   =  comp(eci)%mpicom_compid
@@ -146,6 +147,7 @@ contains
        comp(eci)%cdata_cc%infodata => infodata
 
        ! Determine initial value of comp_present in infodata - to do - add this to component 
+       ! Initialize comp(eci)%present
 
 #ifdef CPRPGI
        if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)

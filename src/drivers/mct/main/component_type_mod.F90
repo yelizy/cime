@@ -22,7 +22,7 @@ module component_type_mod
   ! Public interfaces
   !--------------------------------------------------------------------------
   !
-  ! on component pes
+  ! on component pes = _cc
   public :: component_get_c2x_cc
   public :: component_get_x2c_cc
   public :: component_get_dom_cc
@@ -30,7 +30,7 @@ module component_type_mod
   public :: component_get_cdata_cc
   public :: component_get_iamroot_compid
   !
-  ! on cpl pes
+  ! on cpl pes = _cx
   public :: component_get_x2c_cx
   public :: component_get_c2x_cx
   public :: component_get_dom_cx
@@ -51,6 +51,7 @@ module component_type_mod
   ! Public data
   !--------------------------------------------------------------------------
 
+  ! there will be one of these for every component instance defined on all pes
   type component_type
      !
      ! Coupler pes 
@@ -58,8 +59,8 @@ module component_type_mod
      !
      type(mct_ggrid) , pointer       :: dom_cx      => null() ! component domain (same for all instances)
      type(mct_gsMap) , pointer       :: gsMap_cx    => null() ! decomposition on coupler pes (same for all instances)
-     type(mct_aVect) , pointer       :: x2c_cx      => null() ! 
-     type(mct_aVect) , pointer       :: c2x_cx      => null()
+     type(mct_aVect) , pointer       :: x2c_cx      => null() ! component to coupler data
+     type(mct_aVect) , pointer       :: c2x_cx      => null() ! coupler to component data
      !
      ! Component pes
      !
