@@ -302,8 +302,8 @@ contains
     integer                  :: ID_old
     integer                  :: ID_new
     integer                  :: ID_join
-    type(mct_gsMap), pointer :: gsmap_old
-    type(mct_gsMap), pointer :: gsmap_new
+    type(mct_gsMap), pointer :: gsmap_old ! the gsmap on the component's pes. Set by init_cc
+    type(mct_gsMap), pointer :: gsmap_new ! the gsmap on the coupler pes
     type(mct_gsMap)          :: gsmap_old_join   ! gsmap_old on joined id, temporary
     character(len=*),parameter :: subname = "(seq_mctext_gsmapInit) "
     !-----------------------------------------------------
@@ -321,6 +321,7 @@ contains
     gsmap_new => component_get_gsmap_cx(comp)
     gsmap_old => component_get_gsmap_cc(comp)
 
+    ! why do this when you just define the mpicoms
     call seq_comm_getinfo(ID_old ,mpicom=mpicom_old)
     call seq_comm_getinfo(ID_new ,mpicom=mpicom_new)
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
@@ -527,7 +528,7 @@ contains
           do n = 1,ngseg
              start(n)  = gsmapi%start(n)
              length(n) = gsmapi%length(n)
-             peloc(n)  = peo(gsmapi%pe_loc(n))
+             peloc(n)  = peo(gsmapi%pe_loc(n))  ! different ranks for the same gsmap start, lenghts
           enddo
 
           ! --- initialize the gsmap on the root pe
