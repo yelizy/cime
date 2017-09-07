@@ -19,8 +19,8 @@ module seq_map_type_mod
      integer(IN)             :: counter   ! indicates which seq_maps this mapper points to
      character(CL)           :: strategy  ! indicates the strategy for this mapper, (copy, rearrange, X, Y)
      character(CX)           :: mapfile   ! indicates the mapping file used
-     type(mct_gsMap),pointer :: gsmap_s
-     type(mct_gsMap),pointer :: gsmap_d
+     type(mct_gsMap),pointer :: gsmap_s   ! source gsmap
+     type(mct_gsMap),pointer :: gsmap_d   ! destination gsmap
      !
      !---- for cart3d
      character(CL)           :: cart3d_init
