@@ -1184,9 +1184,10 @@ subroutine cime_init()
    call component_init_pre(esp, ESPID, CPLESPID, CPLALLESPID, infodata, ntype='esp')
    call t_stopf('comp_init_pre_all')
 
-   ! call the init process for components.  "cc" means its on the component processes
+   ! call the component's init process.  "cc" means its on the component processes
    call t_startf('comp_init_cc_atm')
    call t_adj_detailf(+2)
+   ! for cam, this will do the first phase of the init.  Second phase later.
    call component_init_cc(Eclock_a, atm, atm_init, infodata, NLFilename)
    call t_adj_detailf(-2)
    call t_stopf('comp_init_cc_atm')
@@ -1233,6 +1234,7 @@ subroutine cime_init()
    call t_adj_detailf(-2)
    call t_stopf('comp_init_cc_esp')
 
+   ! init each component's grid, domain and Avs on the coupler
    call t_startf('comp_init_cx_all')
    call t_adj_detailf(+2)
    call component_init_cx(atm, infodata)

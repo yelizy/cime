@@ -86,8 +86,8 @@ contains
        write(logunit,'(A)') subname//' called for '//trim(string)
     endif
 
-    id_join = comp%cplcompid
-    call seq_comm_getinfo(ID_join, mpicom=mpicom_join)
+    id_join = comp%cplcompid  ! get id_join for union of component and coupler 
+    call seq_comm_getinfo(ID_join, mpicom=mpicom_join) ! the mpi comm for above.
 
     if (flow == 'c2x') then
        gsmap_s => component_get_gsmap_cc(comp)
@@ -134,6 +134,7 @@ contains
           id_s = cplid
           id_d = comp%compid
        end if
+       ! get mpicom's
        call seq_comm_getinfo(ID_s   , mpicom=mpicom_s)
        call seq_comm_getinfo(ID_d   , mpicom=mpicom_d)
        call seq_comm_getinfo(ID_join, mpicom=mpicom_join)
