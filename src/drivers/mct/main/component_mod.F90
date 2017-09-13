@@ -312,11 +312,12 @@ contains
     character(*), parameter :: F0I = "('"//subname//" : ', A, 2i8 )"
     !---------------------------------------------------------------
 
-    ! Initialize driver rearrangers and AVs on driver
+    ! Initialize rearrangers and AVs between coupler and component
+    ! initialized on the union of coupler and component pes
     ! Initialize cdata_*x data
     ! Zero out x2*_** in case it never gets used then it'll produce zeros in diags
-    ! For ensembles, create only a single dom_*x for the coupler based on the
-    !   first ensemble member.  otherwise, just extend the dom_** and dom_*x to
+    ! For ensembles, create only a single dom_*x for the coupler pes based on the
+    !   first ensemble member.  otherwise, just  the dom_** and dom_*x to
     !   other ensemble members.
 
     do eci = 1,size(comp)
@@ -331,6 +332,7 @@ contains
 
              ! Create gsmap_cx (note that comp(eci)%gsmap_cx all point to comp(1)%gsmap_cx
              ! This will only be valid on the coupler pes
+	     ! coupler just has one decompostion of the mesh
              if (eci == 1) then
                 if (iamroot_CPLID) then
                    write(logunit,F0I) 'creating gsmap_cx for '//comp(eci)%ntype(1:3)
@@ -340,6 +342,7 @@ contains
              endif
 
              ! Create mapper_Cc2x and mapper_Cx2c
+	     ! need a mapper between each instance and the coupler
              allocate(comp(eci)%mapper_Cc2x, comp(eci)%mapper_Cx2c)  
              if (iamroot_CPLID) then
                 write(logunit,F0I) 'Initializing mapper_C'//comp(eci)%ntype(1:1)//'2x',eci

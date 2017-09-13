@@ -443,6 +443,8 @@ contains
     if (seq_comm_iamin(ID_new)) then
        lsize = mct_gsMap_lsize(gsMap_new,mpicom_new)
     endif
+    ! init GG1_old%data (defined on cc pes) on the coupler pes
+    ! doesn't actually extend
     call seq_mctext_avExtend(GG1_old%data, ID_old, ID_join)
 
     if (present(ggrid_new)) then
