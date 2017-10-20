@@ -125,7 +125,7 @@ contains
           call mct_rearr_init(gsmap_s, gsmap_d, mpicom, mapper%rearr)
        endif
 
-    else
+    else  ! different grids
 
        ! --- Initialize Smatp
        call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)

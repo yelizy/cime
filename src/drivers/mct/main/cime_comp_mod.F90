@@ -613,6 +613,7 @@ subroutine cime_pre_init1()
 
    ! set up communicators for all component models and coupler-model pairs
    ! define mpicom_GLOID
+   ! initialize MCT
    call seq_comm_init(Global_Comm, NLFileName)
 
    !--- set task based threading counts ---
@@ -1248,6 +1249,7 @@ subroutine cime_init()
    call t_stopf('comp_init_cx_all')
 
    ! Determine complist (list of comps for each id)
+   ! output as part of memory_write string
 
    call t_startf('comp_list_all')
    call t_adj_detailf(+2)
@@ -1364,6 +1366,7 @@ subroutine cime_init()
 
    ! derive samegrid flags
 
+   ! set samegrid to true for all cases
    samegrid_ao  = .true.
    samegrid_al  = .true.
    samegrid_lr  = .true.
@@ -1374,9 +1377,8 @@ subroutine cime_init()
    samegrid_lg  = .true.
    samegrid_og  = .true.
    samegrid_ig  = .true.
-   samegrid_alo = .true.
+   samegrid_alo = .true. ! for F-compsets
 
-   ! set samegrid to true for single column
    if (.not. single_column) then
       if (trim(atm_gnam) /= trim(ocn_gnam)) samegrid_ao = .false.
       if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.

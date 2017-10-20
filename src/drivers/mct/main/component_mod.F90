@@ -378,7 +378,7 @@ contains
                 call seq_mctext_gGridInit(comp(eci), dom_tmp)
                 call seq_map_map_exchange(comp(eci), flow='c2x', dom_flag=.true., dom_tmp=dom_tmp)
                 if (iamin_CPLID) then
-                   call seq_domain_compare(comp(eci)%dom_cx, dom_tmp, mpicom_CPLID)
+                   call seq_domain_compare(comp(eci)%dom_cx, dom_tmp, mpicom_CPLID) ! comp(eci) will have data because its pointing to comp(1). see component_init_pre
                 end if
                 call mct_ggrid_clean(dom_tmp,rc)
              endif

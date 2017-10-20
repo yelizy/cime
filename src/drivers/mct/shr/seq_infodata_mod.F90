@@ -2315,6 +2315,7 @@ subroutine seq_infodata_Exchange(infodata,ID,type)
   integer(SHR_KIND_IN) :: mpicom     ! mpicom
   integer(SHR_KIND_IN) :: cmppe      ! component 'root' for broadcast
   integer(SHR_KIND_IN) :: cplpe      ! coupler 'root' for broadcast
+  ! init or run phase logicals
   logical :: atm2cpli,atm2cplr
   logical :: lnd2cpli,lnd2cplr
   logical :: rof2cpli,rof2cplr
@@ -2468,14 +2469,14 @@ subroutine seq_infodata_Exchange(infodata,ID,type)
      call shr_sys_abort()
   endif
 
-  ! --- now execute exchange ---
+  ! --- now execute exchange depending on if in init or run stage---
 
   if (atm2cpli) then
-    call shr_mpi_bcast(infodata%atm_present,        mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%atm_present,        mpicom, pebcast=cmppe) ! set at run, given to driver
     call shr_mpi_bcast(infodata%atm_prognostic,     mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%atm_nx,             mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%atm_ny,             mpicom, pebcast=cmppe)
-    call shr_mpi_bcast(infodata%atm_aero,           mpicom, pebcast=cmppe)
+    call shr_mpi_bcast(infodata%atm_nx,             mpicom, pebcast=cmppe) ! set at compile, given to driver
+    call shr_mpi_bcast(infodata%atm_ny,             mpicom, pebcast=cmppe) ! set at compile, given to driver
+    call shr_mpi_bcast(infodata%atm_aero,           mpicom, pebcast=cmppe) !
     ! dead_comps is true if it's ever set to true
     deads = infodata%dead_comps
     call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
