@@ -263,7 +263,7 @@ CONTAINS
     character(*), parameter :: subName = "(atm_final_mct) "
     !-------------------------------------------------------------------------------
 
-    call  datm_comp_final(my_task, master_task, logunit)
+    call  datm_comp_final(my_task, master_task, logunit, SDATM)
 
   end subroutine atm_final_mct
   !===============================================================================

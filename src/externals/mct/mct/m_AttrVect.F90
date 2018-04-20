@@ -91,8 +91,8 @@
 #endif
       type(List) :: iList
       type(List) :: rList
-      integer,dimension(:,:),pointer :: iAttr
-      real(FP) ,dimension(:,:),pointer :: rAttr
+      integer,dimension(:,:),pointer :: iAttr => null()
+      real(FP) ,dimension(:,:),pointer :: rAttr => null()
     end type AttrVect
 
     type AVSharedIndicesOneType
@@ -342,7 +342,9 @@
   n=0
   if(present(lsize)) n=lsize
 
-  allocate( aV%iAttr(nIA,n),aV%rAttr(nRA,n),	stat=ier)
+  allocate(aV%iAttr(nIA,n), stat=ier)
+  if(ier /= 0) call die(myname_,'allocate()',ier)
+  allocate(aV%rAttr(nRA,n), stat=ier)
   if(ier /= 0) call die(myname_,'allocate()',ier)
 
 #ifdef MALL_ON
@@ -407,8 +409,14 @@
 
   call List_nullify(aV%iList)
   call List_nullify(aV%rList)
-  nullify(aV%iAttr)
-  nullify(aV%rAttr)
+  if (associated(av%iAttr)) then
+     deallocate(av%iAttr)
+     nullify(aV%iAttr)
+  endif
+  if (associated(av%rAttr)) then
+     deallocate(av%rAttr)
+     nullify(aV%rAttr)
+  endif
 
 	! Convert the two Lists to two Strings
 

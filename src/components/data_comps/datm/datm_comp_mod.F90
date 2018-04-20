@@ -15,7 +15,7 @@ module datm_comp_mod
   use shr_cal_mod    , only: shr_cal_date2julian, shr_cal_ymdtod2string
   use shr_mpi_mod    , only: shr_mpi_bcast
   use shr_precip_mod , only: shr_precip_partition_rain_snow_ramp
-  use shr_strdata_mod, only: shr_strdata_type, shr_strdata_pioinit, shr_strdata_init
+  use shr_strdata_mod, only: shr_strdata_type, shr_strdata_pioinit, shr_strdata_init, shr_strdata_clean
   use shr_strdata_mod, only: shr_strdata_setOrbs, shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod, only: shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod , only: shr_dmodel_gsmapcreate, shr_dmodel_rearrGGrid
@@ -1144,7 +1144,7 @@ CONTAINS
   end subroutine datm_comp_run
 
   !===============================================================================
-  subroutine datm_comp_final(my_task, master_task, logunit)
+  subroutine datm_comp_final(my_task, master_task, logunit, SDATM)
 
     ! !DESCRIPTION: finalize method for datm model
     implicit none
@@ -1153,7 +1153,7 @@ CONTAINS
     integer(IN) , intent(in) :: my_task     ! my task in mpi communicator mpicom
     integer(IN) , intent(in) :: master_task ! task number of master task
     integer(IN) , intent(in) :: logunit     ! logging unit number
-
+    type(shr_strdata_type) , intent(inout) :: SDATM ! model shr_strdata instance (output)
     !--- formats ---
     character(*), parameter :: F00   = "('(datm_comp_final) ',8a)"
     character(*), parameter :: F91   = "('(datm_comp_final) ',73('-'))"
@@ -1167,6 +1167,8 @@ CONTAINS
        write(logunit,F00) trim(myModelName),': end of main integration loop'
        write(logunit,F91)
     end if
+
+    call shr_strdata_clean(SDATM)
 
     call t_stopf('DATM_FINAL')
 
