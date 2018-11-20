@@ -2371,6 +2371,55 @@
     </resource_limits>
   </machine>
 
+  <machine MACH="abel">
+    <DESC>MEGWARE MiriQuid 2600, os is Linux (pgi), batch system is SLURM</DESC>
+    <NODENAME_REGEX>.*.abel.uio.no</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <CIME_OUTPUT_ROOT>/work/users/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/work/users/$USER/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/work/users/$USER/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/work/users/$USER/ccsm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/work/users/$USER/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>1</GMAKE_J>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>huitang -at- uio.no</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>16</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+	<arg name="num_tasks">-np $TOTALPES</arg>
+	<!--arg name="tasks_per_node">-npernode $PES_PER_NODE</arg-->
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+      <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
+      <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+      <cmd_path lang="perl">/usr/bin perl</cmd_path>
+      <!--cmd_path lang="python">/cluster/software/VERSIONS/python2-2.7.10/bin python</cmd_path-->
+      <cmd_path lang="python">module</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+	<command name="purge"/>
+      </modules>
+      <modules>
+        <command name="load">python2</command>
+        <command name="load">cesm/1.2.2</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="OMP_STACKSIZE">256M</env>
+      <env name="MPI_TYPE_DEPTH">16</env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_ROOT}</env>
+    </environment_variables>
+  </machine>
+
 
 <default_run_suffix>
   <default_run_exe>${EXEROOT}/cesm.exe </default_run_exe>
