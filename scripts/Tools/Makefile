@@ -84,6 +84,12 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
    USE_CXX = true
 endif
 
+HOMME_TARGET ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_TARGET --value)
+ifeq ($(strip $(HOMME_TARGET)), preqx_kokkos)
+   USE_CXX = true
+   USE_KOKKOS = TRUE
+endif
+
 ifeq ($(strip $(USE_FMS)), TRUE)
   SLIBS += -lfms
 endif
@@ -139,7 +145,7 @@ ifeq ($(strip $(PIO_VERSION)),1)
 endif
 
 ifeq (,$(SHAREDPATH))
-  SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
+  SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)/$(COMP_INTERFACE)
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
 
@@ -297,6 +303,16 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   include $(ALBANY_PATH)/export_albany.in
 endif
 
+ifeq ($(strip $(USE_KOKKOS)), TRUE)
+  ifdef KOKKOS_PATH
+    INC_KOKKOS:=$(KOKKOS_PATH)/include
+    LIB_KOKKOS:=$(KOKKOS_PATH)/lib
+  else
+    $(error $(HOMME_TARGET) requires env. variable KOKKOS_ROOT to be set)
+  endif
+	CPPDEFS += -DUSE_KOKKOS_KERNELS
+endif
+
 # Set MOAB info if it is being used
 ifeq ($(strip $(USE_MOAB)), TRUE)
   ifdef MOAB_PATH
@@ -334,6 +350,11 @@ else
   EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
 endif
 
+ifdef LIB_PNETCDF
+   CPPDEFS += -D_PNETCDF
+   SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
+endif
+
 # Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
 CIME_ESMFMKFILE := undefined_ESMFMKFILE
 ifdef ESMFMKFILE
@@ -354,7 +375,6 @@ ifeq ($(USE_ESMF_LIB), TRUE)
   FFLAGS += $(ESMF_F90COMPILEPATHS)
   SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
-
 
 ifdef CPRE
   FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
@@ -441,6 +461,9 @@ endif
 ifdef INC_ALBANY
   INCLDIR += -I$(INC_ALBANY)
 endif
+ifdef INC_KOKKOS
+  INCLDIR += -I$(INC_KOKKOS)
+endif
 ifdef INC_MOAB
   INCLDIR += -I$(INC_MOAB)
 endif
@@ -525,8 +548,11 @@ FFLAGS_NOOPT += $(FPPDEFS)
 
 
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
-# The following is for the COSP simulator code:
-COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
+  # The following is for the COSP simulator code:
+  COSP_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/cosp)
+  ifeq ($(MODEL),driver)
+    INCLDIR+=-I$(COSP_LIBDIR)
+  endif
 endif
 
 ifeq ($(MODEL),cam)
@@ -562,9 +588,6 @@ ifndef SLIBS
   endif
 endif
 
-ifdef LIB_PNETCDF
-   SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
-endif
 ifdef LAPACK_LIBDIR
    SLIBS += -L$(LAPACK_LIBDIR) -llapack -lblas
 endif
@@ -576,6 +599,9 @@ ifdef LIB_MPI
    endif
 endif
 
+ifdef LIB_KOKKOS
+   SLIBS += -L$(LIB_KOKKOS) -lkokkos
+endif
 
 # Add PETSc libraries
 ifeq ($(strip $(USE_PETSC)), TRUE)

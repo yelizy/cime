@@ -147,31 +147,26 @@ class SystemTestsCompareTwo(SystemTestsCommon):
         This should be written to refer to self._case: It will be called once with
         self._case pointing to case1, and once with self._case pointing to case2.
         """
-        pass
 
     def _case_one_custom_prerun_action(self):
         """
         Use to do arbitrary actions immediately before running case one
         """
-        pass
 
     def _case_two_custom_prerun_action(self):
         """
         Use to do arbitrary actions immediately before running case two
         """
-        pass
 
     def _case_one_custom_postrun_action(self):
         """
         Use to do arbitrary actions immediately after running case one
         """
-        pass
 
     def _case_two_custom_postrun_action(self):
         """
         Use to do arbitrary actions immediately after running case two
         """
-        pass
 
     # ========================================================================
     # Main public methods
@@ -368,7 +363,7 @@ class SystemTestsCompareTwo(SystemTestsCommon):
                     rundir = self._get_case2_rundir())
                 self._write_info_to_case2_output_root()
                 self._setup_cases()
-            except:
+            except BaseException:
                 # If a problem occurred in setting up the test cases, it's
                 # important to remove the case2 directory: If it's kept around,
                 # that would signal that test setup was done successfully, and
