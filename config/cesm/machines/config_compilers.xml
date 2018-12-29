@@ -1177,4 +1177,87 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
+<compiler MACH="vilje">
+  <NETCDF_PATH>$(NETCDF_ROOT)</NETCDF_PATH>
+  <PNETCDF_PATH>$(NETCDF_ROOT)</PNETCDF_PATH>
+  <MPI_PATH>$(MPI_ROOT)</MPI_PATH>
+  <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 -xAVX </append>
+    <append MODEL="micom"> -r8 </append>
+  </FFLAGS>
+  <SLIBS>
+    <append>-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf</append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="fram">
+  <CPPDEFS>
+   <append> -D$(OS) </append>
+  </CPPDEFS>
+  <FFLAGS>
+   <append> -xCORE-AVX2 </append>
+  </FFLAGS>
+  <NETCDF_PATH>$(EBROOTNETCDFMINFORTRAN)</NETCDF_PATH>
+  <PNETCDF_PATH>$(EBROOTPNETCDF)</PNETCDF_PATH>
+  <MPI_PATH>$(MPI_ROOT)</MPI_PATH>
+  <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append MODEL="micom"> -r8 </append>
+    <append MODEL="cam"> -init=zero,arrays </append>
+  </FFLAGS>
+  <MPICC> mpiicc </MPICC>
+  <MPICXX> mpiicpc </MPICXX>
+  <MPIFC> mpiifort </MPIFC>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <SLIBS>
+    <append>-mkl=sequential -lnetcdff -lnetcdf</append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="abel" COMPILER="intel">
+  <CPPDEFS>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 </append>
+  </CPPDEFS>
+  <SLIBS>
+    <append> -mkl -L$(NETCDF_ROOT)/lib -lnetcdff -lnetcdf -Wl,--as-needed,-L$(NETCDF_ROOT)/lib -lnetcdff -lnetcdf</append>
+  </SLIBS>
+  <FREEFLAGS>
+    <base> -free </base>
+  </FREEFLAGS>
+  <FIXEDFLAGS>
+    <base> -fixed -132 </base>
+  </FIXEDFLAGS>
+  <FFLAGS>
+     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </append>
+     <append DEBUG="FALSE"> -O2 </append>
+     <append> -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs </append>
+  </FFLAGS>
+  <FFLAGS_NOOPT>
+     <base> -O0 </base>
+  </FFLAGS_NOOPT>
+  <CFLAGS>
+     <append> -O2 -fp-model precise </append>
+  </CFLAGS>
+  <FC_AUTO_R8>
+     <base> -r8 </base>
+  </FC_AUTO_R8>
+  <SFC>ifort</SFC>
+  <SCC>icc</SCC>
+  <SCXX>icpc</SCXX>
+  <MPIFC>mpif90</MPIFC>
+  <MPICC>mpicc</MPICC>
+  <MPICXX>mpicxx</MPICXX>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LDFLAGS>
+     <base> -cxxlib </base>
+  </CXX_LDFLAGS>
+  <LDFLAGS>
+    <append>-L$(HDF5_DIR) -lhdf5</append>
+  </LDFLAGS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <NETCDF_PATH>$ENV{NETCDF_ROOT}</NETCDF_PATH>
+</compiler>
+
 </config_compilers>

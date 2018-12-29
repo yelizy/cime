@@ -199,7 +199,7 @@ class EnvBatch(EnvBase):
             overrides["max_tasks_per_node"] = int(task_count)
 
         overrides["job_id"] = case.get_value("CASE") + os.path.splitext(job)[1]
-        if "pleiades" in case.get_value("MACH"):
+        if "pleiades"  or "vilje" in case.get_value("MACH"):
             # pleiades jobname needs to be limited to 15 chars
             overrides["job_id"] = overrides["job_id"][:15]
 
@@ -350,6 +350,9 @@ class EnvBatch(EnvBase):
                             prefix = directive_prefix if custom_prefix is None else custom_prefix
 
                             result.append("{}{}".format("" if not prefix else (prefix + " "), directive))
+                    if "fram" in case.get_value("MACH") and job == "case.st_archive":
+                        directive = "--qos=preproc"
+                        result.append("{} {}".format(directive_prefix, directive))
 
         return "\n".join(result)
 
@@ -549,6 +552,8 @@ class EnvBatch(EnvBase):
         logging_options = get_logging_options()
         if logging_options:
             run_args_str += " {}".format(logging_options)
+        if run_args_str is None:
+            return ""
 
         batch_env_flag = self.get_value("batch_env", subgroup=None)
         if not batch_env_flag:
