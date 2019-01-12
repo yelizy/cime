@@ -150,6 +150,10 @@ ifeq (,$(SHAREDPATH))
 endif
 
 include $(CASEROOT)/Macros.make
+
+ifeq ($(strip $(USE_FMS)), TRUE)
+  SLIBS += -lfms
+endif
 # Decide whether to use a C++ or Fortran linker, based on whether we
 # are using any C++ code and the compiler-dependent CXX_LINKER variable
 ifeq ($(USE_CXX), true)
@@ -813,9 +817,8 @@ test_esmf: test_esmf.o
 #-------------------------------------------------------------------------------
 # create list of component libraries - hard-wired for current ccsm components
 #-------------------------------------------------------------------------------
-CLMVER = $(filter $(CLM_CONFIG_OPTS), clm5_0 clm4_5)
 ifeq ($(CIME_MODEL),cesm)
-  ifneq ($(CLMVER),$(null))
+  ifeq ($(COMP_LND),clm)
     USE_SHARED_CLM=TRUE
   else
     USE_SHARED_CLM=FALSE
@@ -826,10 +829,10 @@ endif
 ifeq ($(USE_SHARED_CLM),FALSE)
   LNDOBJDIR = $(EXEROOT)/lnd/obj
   LNDLIBDIR=$(LIBROOT)
-  ifeq ($(CLMVER),$(null))
-    LNDLIB := liblnd.a
-  else
+  ifeq ($(COMP_LND),clm)
     LNDLIB := libclm.a
+  else
+    LNDLIB := liblnd.a
   endif
   INCLDIR += -I$(LNDOBJDIR)
 else
