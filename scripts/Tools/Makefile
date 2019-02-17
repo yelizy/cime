@@ -83,13 +83,13 @@ endif
 ifeq ($(strip $(USE_ALBANY)), TRUE)
    USE_CXX = true
 endif
-
-HOMME_TARGET ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_TARGET --value)
-ifeq ($(strip $(HOMME_TARGET)), preqx_kokkos)
-   USE_CXX = true
-   USE_KOKKOS = TRUE
+ifeq ($(CIME_MODEL),e3sm)
+  HOMME_TARGET ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_TARGET --value)
+  ifeq ($(strip $(HOMME_TARGET)), preqx_kokkos)
+     USE_CXX = true
+     USE_KOKKOS = TRUE
+  endif
 endif
-
 ifeq ($(strip $(USE_FMS)), TRUE)
   SLIBS += -lfms
 endif
@@ -241,9 +241,9 @@ endif
 
 
 ifeq ($(MPILIB),mpi-serial)
-	ifdef PNETCDF_PATH
-		undefine PNETCDF_PATH
-	endif
+  ifdef PNETCDF_PATH
+    undefine PNETCDF_PATH
+  endif
 else
   ifdef PNETCDF_PATH
     ifndef $(INC_PNETCDF)
