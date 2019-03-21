@@ -18,6 +18,7 @@ def get_standard_makefile_args(case):
                  "OCN_SUBMODEL", "CISM_USE_TRILINOS", "USE_ALBANY", "USE_PETSC"]
 
     make_args = "CIME_MODEL={} ".format(case.get_value("MODEL"))
+    make_args += " compile_threaded={} ".format(case.get_build_threaded())
     for var in variables:
         make_args+=xml_to_make_variable(case, var)
 
@@ -346,7 +347,7 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
         casetools       = case.get_value("CASETOOLS")
 
         cmd = gmake + " -f " + os.path.join(casetools, "Makefile")
-        cmd += get_standard_makefile_args(case)
+        cmd += " {}".format(get_standard_makefile_args(case))
         if cleanlist is not None:
             for item in cleanlist:
                 tcmd = cmd + " clean" + item
