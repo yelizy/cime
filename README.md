@@ -16,6 +16,8 @@ Energy Exascale Earth System Model</a> (E3SM).
 
 See <a href="http://esmci.github.io/cime">esmci.github.io/cime</a>
 
+Documentation for NordicESMhub users is available [here](UpdateNordicESMhub.md).
+
 # Developers
 
 ## Lead Developers
