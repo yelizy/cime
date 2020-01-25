@@ -6,7 +6,7 @@ from CIME.utils import SharedArea, find_files, safe_copy, expect
 from CIME.XML.inputdata import Inputdata
 import CIME.Servers
 
-import glob, hashlib
+import glob, hashlib, shutil
 
 logger = logging.getLogger(__name__)
 # The inputdata_checksum.dat file will be read into this hash if it's available
@@ -19,6 +19,7 @@ def _download_checksum_file(rundir):
     """
     inputdata = Inputdata()
     protocol = "svn"
+    chksum_found = False
     # download and merge all available chksum files.
     while protocol is not None:
         protocol, address, user, passwd, chksum_file = inputdata.get_next_server()
@@ -31,13 +32,15 @@ def _download_checksum_file(rundir):
         elif protocol == "gftp":
             server = CIME.Servers.GridFTP(address, user, passwd)
         elif protocol == "ftp":
-            server = CIME.Servers.FTP(address, user, passwd)
+            server = CIME.Servers.FTP.ftp_login(address, user, passwd)
         elif protocol == "wget":
-            server = CIME.Servers.WGET(address, user, passwd)
+            server = CIME.Servers.WGET.wget_login(address, user, passwd)
         else:
             expect(False, "Unsupported inputdata protocol: {}".format(protocol))
 
-        if not chksum_file:
+        if chksum_file:
+            chksum_found = True
+        else:
             continue
 
         success = False
@@ -67,7 +70,7 @@ def _download_checksum_file(rundir):
                 else:
                     logger.warning("Could not automatically download file {}".
                                    format(full_path))
-
+    return chksum_found
 
 def _reformat_chksum_file(chksum_file, server_file):
     """
@@ -134,7 +137,10 @@ def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
             # this is intended to prevent a race condition in which
             # one case attempts to use a refdir before another one has
             # completed the download
-            os.rename(full_path+".tmp",full_path)
+            if success:
+                os.rename(full_path+".tmp",full_path)
+            else:
+                shutil.rmtree(full_path+".tmp")
         else:
             success = server.getfile(rel_path, full_path)
     return success
@@ -153,13 +159,13 @@ def check_all_input_data(self, protocol=None, address=None, input_data_root=None
                                         input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum)
     else:
         if chksum:
-            _download_checksum_file(self.get_value("RUNDIR"))
+            chksum_found = _download_checksum_file(self.get_value("RUNDIR"))
 
         success = self.check_input_data(protocol=protocol, address=address, download=False,
-                                        input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum)
+                                        input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum and chksum_found)
         if download and not success:
             if not chksum:
-                _download_checksum_file(self.get_value("RUNDIR"))
+                chksum_found = _download_checksum_file(self.get_value("RUNDIR"))
             success = _downloadfromserver(self, input_data_root, data_list_dir)
 
     expect(not download or (download and success), "Could not find all inputdata on any server")
@@ -269,11 +275,12 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
     rundir = case.get_value("RUNDIR")
     # Fill in defaults as needed
     input_data_root = case.get_value("DIN_LOC_ROOT") if input_data_root is None else input_data_root
-
+    input_ic_root = case.get_value("DIN_LOC_IC")
     expect(os.path.isdir(data_list_dir), "Invalid data_list_dir directory: '{}'".format(data_list_dir))
 
     data_list_files = find_files(data_list_dir, "*.input_data_list")
-    expect(data_list_files, "No .input_data_list files found in dir '{}'".format(data_list_dir))
+    if not data_list_files:
+        logger.warning("WARNING: No .input_data_list files found in dir '{}'".format(data_list_dir))
 
     no_files_missing = True
     if download:
@@ -286,11 +293,13 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
         elif protocol == "gftp":
             server = CIME.Servers.GridFTP(address, user, passwd)
         elif protocol == "ftp":
-            server = CIME.Servers.FTP(address, user, passwd)
+            server = CIME.Servers.FTP.ftp_login(address, user, passwd)
         elif protocol == "wget":
-            server = CIME.Servers.WGET(address, user, passwd)
+            server = CIME.Servers.WGET.wget_login(address, user, passwd)
         else:
             expect(False, "Unsupported inputdata protocol: {}".format(protocol))
+        if not server:
+            return False
 
     for data_list_file in data_list_files:
         logging.info("Loading input file list: '{}'".format(data_list_file))
@@ -299,6 +308,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
 
         for line in lines:
             line = line.strip()
+            use_ic_path = False
             if (line and not line.startswith("#")):
                 tokens = line.split('=')
                 description, full_path = tokens[0].strip(), tokens[1].strip()
@@ -307,7 +317,13 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                 if(full_path):
                     # expand xml variables
                     full_path = case.get_resolved_value(full_path)
-                    rel_path  = full_path.replace(input_data_root, "")
+                    if input_data_root in full_path:
+                        rel_path  = full_path.replace(input_data_root, "")
+                    elif input_ic_root and \
+                         (input_ic_root not in input_data_root and input_ic_root in full_path):
+                        rel_path  = full_path.replace(input_ic_root, "prod")
+                        use_ic_path = True
+
                     model = os.path.basename(data_list_file).split('.')[0]
 
                     if ("/" in rel_path and rel_path == full_path):
@@ -333,12 +349,16 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                         if ("/" in rel_path and not os.path.exists(full_path)):
                             logger.warning("  Model {} missing file {} = '{}'".format(model, description, full_path))
                             no_files_missing = False
-
                             if (download):
-                                no_files_missing = _download_if_in_repo(server,
-                                                                        input_data_root, rel_path.strip(os.sep),
-                                                                        isdirectory=isdirectory)
-                                if no_files_missing:
+                                if use_ic_path:
+                                    no_files_missing = _download_if_in_repo(server,
+                                                                            input_ic_root[:-4], rel_path.strip(os.sep),
+                                                                            isdirectory=isdirectory)
+                                else:
+                                    no_files_missing = _download_if_in_repo(server,
+                                                                            input_data_root, rel_path.strip(os.sep),
+                                                                            isdirectory=isdirectory)
+                                if no_files_missing and chksum:
                                     verify_chksum(input_data_root, rundir, rel_path.strip(os.sep), isdirectory)
                         else:
                             if chksum:
@@ -356,8 +376,8 @@ def verify_chksum(input_data_root, rundir, filename, isdirectory):
     For file in filename perform a chksum and compare the result to that stored in
     the local checksumfile, if isdirectory chksum all files in the directory of form *.*
     """
+    hashfile = os.path.join(rundir, local_chksum_file)
     if not chksum_hash:
-        hashfile = os.path.join(rundir, local_chksum_file)
         if not os.path.isfile(hashfile):
             logger.warning("Failed to find or download file {}".format(hashfile))
             return

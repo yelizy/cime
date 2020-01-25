@@ -10,7 +10,7 @@ from CIME.XML.standard_module_setup import *
 #pylint: disable=import-error,redefined-builtin
 from six.moves import input
 from CIME.utils                     import expect, get_cime_root, append_status
-from CIME.utils                     import convert_to_type, get_model
+from CIME.utils                     import convert_to_type, get_model, set_model
 from CIME.utils                     import get_project, get_charge_account, check_name
 from CIME.utils                     import get_current_commit, safe_copy, get_cime_default_driver
 from CIME.locked_files              import LOCKED_DIR, lock_file
@@ -144,6 +144,7 @@ class Case(object):
         These are derived variables which can be used in the config_* files
         for variable substitution using the {{ var }} syntax
         """
+        set_model(self.get_value("MODEL"))
         env_mach_pes  = self.get_env("mach_pes")
         env_mach_spec = self.get_env('mach_specific')
         comp_classes  = self.get_values("COMP_CLASSES")
@@ -483,7 +484,7 @@ class Case(object):
             self._compsetname = compset_name
 
         # Fill in compset name
-        self._compsetname, self._components = self.valid_compset(self._compsetname, files)
+        self._compsetname, self._components = self.valid_compset(self._compsetname, compset_alias, files)
         # if this is a valiid compset longname there will be at least 7 components.
         components = self.get_compset_components()
         expect(len(components) > 6, "No compset alias {} found and this does not appear to be a compset longname.".format(compset_name))
@@ -544,30 +545,37 @@ class Case(object):
 
         return primary_component
 
-    def _valid_compset_impl(self, compset_name, comp_classes, comp_hash):
+    def _valid_compset_impl(self, compset_name, compset_alias, comp_classes, comp_hash):
         """Add stub models missing in <compset_name>, return full compset name.
         <comp_classes> is a list of all supported component classes.
         <comp_hash> is a dictionary where each key is a supported component
         (e.g., datm) and the associated value is the index in <comp_classes> of
         that component's class (e.g., 1 for atm).
-        >>> Case(read_only=False)._valid_compset_impl('2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV', ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
+        >>> Case(read_only=False)._valid_compset_impl('2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV', None, ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
         ('2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_SESP', ['2000', 'DATM%NYF', 'SLND', 'DICE%SSMI', 'DOCN%DOM', 'DROF%NYF', 'SGLC', 'SWAV', 'SESP'])
-        >>> Case(read_only=False)._valid_compset_impl('2000_DATM%NYF_DICE%SSMI_DOCN%DOM_DROF%NYF', ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
+        >>> Case(read_only=False)._valid_compset_impl('2000_DATM%NYF_DICE%SSMI_DOCN%DOM_DROF%NYF', None, ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
         ('2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_SESP', ['2000', 'DATM%NYF', 'SLND', 'DICE%SSMI', 'DOCN%DOM', 'DROF%NYF', 'SGLC', 'SWAV', 'SESP'])
-        >>> Case(read_only=False)._valid_compset_impl('2000_DICE%SSMI_DOCN%DOM_DATM%NYF_DROF%NYF', ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
+        >>> Case(read_only=False)._valid_compset_impl('2000_DICE%SSMI_DOCN%DOM_DATM%NYF_DROF%NYF', None, ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
         ('2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_SESP', ['2000', 'DATM%NYF', 'SLND', 'DICE%SSMI', 'DOCN%DOM', 'DROF%NYF', 'SGLC', 'SWAV', 'SESP'])
-        >>> Case(read_only=False)._valid_compset_impl('2000_DICE%SSMI_DOCN%DOM_DATM%NYF_DROF%NYF_TEST', ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
+        >>> Case(read_only=False)._valid_compset_impl('2000_DICE%SSMI_DOCN%DOM_DATM%NYF_DROF%NYF_TEST', None, ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
         ('2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_SESP_TEST', ['2000', 'DATM%NYF', 'SLND', 'DICE%SSMI', 'DOCN%DOM', 'DROF%NYF', 'SGLC', 'SWAV', 'SESP'])
-        >>> Case(read_only=False)._valid_compset_impl('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD', ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1, 'cam':1,'dlnd':2,'clm':2,'slnd':2,'cice':3,'dice':3,'sice':3,'pop':4,'docn':4,'socn':4,'mosart':5,'drof':5,'srof':5,'cism':6,'sglc':6,'ww':7,'swav':7,'ww3':7,'sesp':8})
+        >>> Case(read_only=False)._valid_compset_impl('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD', None, ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1, 'cam':1,'dlnd':2,'clm':2,'slnd':2,'cice':3,'dice':3,'sice':3,'pop':4,'docn':4,'socn':4,'mosart':5,'drof':5,'srof':5,'cism':6,'sglc':6,'ww':7,'swav':7,'ww3':7,'sesp':8})
         ('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_SESP_BGC%BDRD', ['1850', 'CAM60', 'CLM50%BGC-CROP', 'CICE', 'POP2%ECO%ABIO-DIC', 'MOSART', 'CISM2%NOEVOLVE', 'WW3', 'SESP'])
-        >>> Case(read_only=False)._valid_compset_impl('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD_TEST', ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'IAC', 'ESP'], {'datm':1,'satm':1, 'cam':1,'dlnd':2,'clm':2,'slnd':2,'cice':3,'dice':3,'sice':3,'pop':4,'docn':4,'socn':4,'mosart':5,'drof':5,'srof':5,'cism':6,'sglc':6,'ww':7,'swav':7,'ww3':7,'sesp':8})
+        >>> Case(read_only=False)._valid_compset_impl('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD_TEST', None, ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'IAC', 'ESP'], {'datm':1,'satm':1, 'cam':1,'dlnd':2,'clm':2,'slnd':2,'cice':3,'dice':3,'sice':3,'pop':4,'docn':4,'socn':4,'mosart':5,'drof':5,'srof':5,'cism':6,'sglc':6,'ww':7,'swav':7,'ww3':7,'sesp':8})
         ('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_SIAC_SESP_BGC%BDRD_TEST', ['1850', 'CAM60', 'CLM50%BGC-CROP', 'CICE', 'POP2%ECO%ABIO-DIC', 'MOSART', 'CISM2%NOEVOLVE', 'WW3', 'SIAC', 'SESP'])
+        >>> Case(read_only=False)._valid_compset_impl('1850_SATM_SLND_SICE_SOCN_SGLC_SWAV', 'S', ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'IAC', 'ESP'], {'datm':1,'satm':1, 'cam':1,'dlnd':2,'clm':2,'slnd':2,'cice':3,'dice':3,'sice':3,'pop':4,'docn':4,'socn':4,'mosart':5,'drof':5,'srof':5,'cism':6,'sglc':6,'ww':7,'swav':7,'ww3':7,'sesp':8})
+        ('1850_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV_SIAC_SESP', ['1850', 'SATM', 'SLND', 'SICE', 'SOCN', 'SROF', 'SGLC', 'SWAV', 'SIAC', 'SESP'])
+
+        >>> Case(read_only=False)._valid_compset_impl('1850_SATM_SLND_SICE_SOCN_SGLC_SWAV', None, ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'IAC', 'ESP'], {'datm':1,'satm':1, 'cam':1,'dlnd':2,'clm':2,'slnd':2,'cice':3,'dice':3,'sice':3,'pop':4,'docn':4,'socn':4,'mosart':5,'drof':5,'srof':5,'cism':6,'sglc':6,'ww':7,'swav':7,'ww3':7,'sesp':8}) #doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        CIMEError: ERROR: Invalid compset name, 1850_SATM_SLND_SICE_SOCN_SGLC_SWAV, all stub components generated
         """
         # Find the models declared in the compset
         model_set = [None]*len(comp_classes)
         components = compset_name.split('_')
         model_set[0] = components[0]
         noncomps = []
+        allstubs = True
         for model in components[1:]:
             match = Case.__mod_match_re__.match(model.lower())
             expect(match is not None, "No model match for {}".format(model))
@@ -588,7 +596,11 @@ class Case(object):
                 stub = 'S' + comp_class
                 logger.info("Automatically adding {} to compset".format(stub))
                 model_set[comp_ind] = stub
+            elif model_set[comp_ind][0] != 'S':
+                allstubs = False
 
+        expect((compset_alias is not None) or (not allstubs),
+               'Invalid compset name, {}, all stub components generated'.format(compset_name))
         # Return the completed compset
         compsetname = '_'.join(model_set)
         for noncomp in noncomps:
@@ -602,7 +614,7 @@ class Case(object):
     # is handled consistenly, this should not affect functionality.
     # Note: interstitial digits are included (e.g., in FV3GFS).
     __mod_match_re__ = re.compile(r"([^%]*[^0-9%]+)")
-    def valid_compset(self, compset_name, files):
+    def valid_compset(self, compset_name, compset_alias, files):
         """Add stub models missing in <compset_name>, return full compset name.
         <files> is used to collect set of all supported components.
         """
@@ -633,7 +645,8 @@ class Case(object):
                 mod_match = Case.__mod_match_re__.match(model.lower()).group(1)
                 comp_hash[mod_match] = comp_ind
 
-        return self._valid_compset_impl(compset_name, comp_classes, comp_hash)
+        return self._valid_compset_impl(compset_name, compset_alias,
+                                        comp_classes, comp_hash)
 
 
     def _set_info_from_primary_component(self, files, pesfile=None):
@@ -881,7 +894,7 @@ class Case(object):
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
-                  input_dir=None, driver=None, workflow_case="default",
+                  input_dir=None, driver=None, workflowid="default",
                   non_local=False):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
@@ -1070,7 +1083,7 @@ class Case(object):
         logger.info("Batch_system_type is {}".format(batch_system_type))
         batch = Batch(batch_system=batch_system_type, machine=machine_name, files=files)
         workflow = Workflow(files=files)
-        bjobs = workflow.get_workflow_jobs(machine=machine_name, workflow_case=workflow_case)
+        bjobs = workflow.get_workflow_jobs(machine=machine_name, workflowid=workflowid)
         env_workflow = self.get_env("workflow")
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
@@ -1201,7 +1214,8 @@ leveraging version control (git or svn).
 
         for component in components:
             directory = os.path.join(self._caseroot,"SourceMods","src.{}".format(component))
-            if not os.path.exists(directory):
+            # don't make SourceMods for stub components
+            if not os.path.exists(directory) and component not in ('satm','slnd','sice','socn','sesp','sglc','swav'):
                 os.makedirs(directory)
                 # Besides giving some information on SourceMods, this
                 # README file serves one other important purpose: By
@@ -1327,13 +1341,13 @@ directory, NOT in this subdirectory."""
 
     def submit_jobs(self, no_batch=False, job=None, skip_pnl=None, prereq=None, allow_fail=False,
                     resubmit_immediate=False, mail_user=None, mail_type=None, batch_args=None,
-                    dry_run=False):
+                    dry_run=False, workflow=True):
         env_batch = self.get_env('batch')
         result =  env_batch.submit_jobs(self, no_batch=no_batch, skip_pnl=skip_pnl,
                                         job=job, user_prereq=prereq, allow_fail=allow_fail,
                                         resubmit_immediate=resubmit_immediate,
                                         mail_user=mail_user, mail_type=mail_type,
-                                        batch_args=batch_args, dry_run=dry_run)
+                                        batch_args=batch_args, dry_run=dry_run, workflow=workflow)
         return result
 
     def get_job_info(self):
@@ -1571,7 +1585,7 @@ directory, NOT in this subdirectory."""
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
-               input_dir=None, driver=None, workflow_case="default", non_local=False):
+               input_dir=None, driver=None, workflowid="default", non_local=False):
         try:
             # Set values for env_case.xml
             self.set_lookup_value("CASE", os.path.basename(casename))
@@ -1588,7 +1602,7 @@ directory, NOT in this subdirectory."""
                            output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,
                            input_dir=input_dir, driver=driver,
-                           workflow_case=workflow_case, non_local=non_local)
+                           workflowid=workflowid, non_local=non_local)
 
             self.create_caseroot()
 
@@ -1627,3 +1641,8 @@ directory, NOT in this subdirectory."""
 
     def get_primary_job(self):
         return "case.test" if self.get_value("TEST") else "case.run"
+
+    def get_first_job(self):
+        env_workflow = self.get_env("workflow")
+        jobs = env_workflow.get_jobs()
+        return jobs[0]

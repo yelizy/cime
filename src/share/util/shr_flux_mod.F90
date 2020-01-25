@@ -13,7 +13,7 @@ module shr_flux_mod
 
 ! !USES:
 
-   use shr_kind_mod    ! shared kinds
+   use shr_kind_mod, only : R8=>SHR_KIND_R8, IN=>SHR_KIND_IN    ! shared kinds
    use shr_const_mod   ! shared constants
    use shr_sys_mod     ! shared system routines
    use shr_log_mod, only: s_loglev  => shr_log_Level
@@ -40,16 +40,14 @@ module shr_flux_mod
 
 ! !PUBLIC DATA MEMBERS:
 
-  integer(SHR_KIND_IN),parameter,public :: shr_flux_MOwScales   = 1 ! w scales  option
-  integer(SHR_KIND_IN),parameter,public :: shr_flux_MOfunctions = 2 ! functions option
-  real   (SHR_KIND_R8),parameter,public :: shr_flux_MOgammaM = 3.59_SHR_KIND_R8
-  real   (SHR_KIND_R8),parameter,public :: shr_flux_MOgammaS = 7.86_SHR_KIND_R8
+  integer(IN),parameter,public :: shr_flux_MOwScales   = 1 ! w scales  option
+  integer(IN),parameter,public :: shr_flux_MOfunctions = 2 ! functions option
+  real   (R8),parameter,public :: shr_flux_MOgammaM = 3.59_R8
+  real   (R8),parameter,public :: shr_flux_MOgammaS = 7.86_R8
 
 !EOP
 
    !--- rename kinds for local readability only ---
-   integer,parameter :: R8 = SHR_KIND_R8  ! 8 byte real
-   integer,parameter :: IN = SHR_KIND_IN  ! native/default integer
 
    integer,parameter :: debug = 0 ! internal debug level
 
@@ -138,10 +136,11 @@ end subroutine shr_flux_adjust_constants
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   & 
+SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
            &               qbot  ,s16O  ,sHDO  ,s18O  ,rbot  ,   &
            &               tbot  ,us    ,vs    ,   &
-           &               ts    ,mask  ,sen   ,lat   ,lwup  ,   &
+           &               ts    ,mask  , seq_flux_atmocn_minwind, &
+           &               sen   ,lat   ,lwup  ,   &
            &               r16O, rhdo, r18O, &
            &               evap  ,evap_16O, evap_HDO, evap_18O, &
            &               taux  ,tauy  ,tref  ,qref  ,   &
@@ -160,6 +159,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    !--- input arguments --------------------------------
    integer(IN),intent(in) ::       nMax  ! data vector length
    integer(IN),intent(in) :: mask (nMax) ! ocn domain mask       0 <=> out of domain
+   integer(IN),intent(in) :: ocn_surface_flux_scheme
    real(R8)   ,intent(in) :: zbot (nMax) ! atm level height      (m)
    real(R8)   ,intent(in) :: ubot (nMax) ! atm u wind            (m/s)
    real(R8)   ,intent(in) :: vbot (nMax) ! atm v wind            (m/s)
@@ -176,7 +176,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    real(R8)   ,intent(in) :: us   (nMax) ! ocn u-velocity        (m/s)
    real(R8)   ,intent(in) :: vs   (nMax) ! ocn v-velocity        (m/s)
    real(R8)   ,intent(in) :: ts   (nMax) ! ocn temperature       (K)
-   integer(IN),intent(in) :: ocn_surface_flux_scheme
+   real(R8)   ,intent(in) :: seq_flux_atmocn_minwind        ! minimum wind speed for atmocn      (m/s)
 
    !--- output arguments -------------------------------
    real(R8),intent(out)  ::  sen  (nMax) ! heat flux: sensible    (W/m^2)
@@ -201,11 +201,10 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
 ! !EOP
 
    !--- local constants --------------------------------
-   real(R8),parameter :: umin  =  0.5_R8 ! minimum wind speed       (m/s)
    real(R8),parameter :: zref  = 10.0_R8 ! reference height           (m)
    real(R8),parameter :: ztref =  2.0_R8 ! reference height for air T (m)
 !!++ Large only
-   !real(R8),parameter :: cexcd  = 0.0346_R8 ! ratio Ch(water)/CD 
+   !real(R8),parameter :: cexcd  = 0.0346_R8 ! ratio Ch(water)/CD
    !real(R8),parameter :: chxcds = 0.018_R8  ! ratio Ch(heat)/CD for stable case
    !real(R8),parameter :: chxcdu = 0.0327_R8 ! ratio Ch(heat)/CD for unstable case
 !!++ COARE only
@@ -232,7 +231,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    real(R8)    :: hol    ! H (at zbot) over L
    real(R8)    :: xsq    ! ?
    real(R8)    :: xqq    ! ?
- !!++ Large only  
+ !!++ Large only
    real(R8)    :: psimh  ! stability function at zbot (momentum)
    real(R8)    :: psixh  ! stability function at zbot (heat and water)
    real(R8)    :: psix2  ! stability function at ztref reference height
@@ -247,7 +246,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    real(R8)    :: zo,zot,zoq      ! roughness lengths
    real(R8)    :: hsb,hlb         ! sens & lat heat flxs at zbot
    real(R8) :: trf,qrf,urf,vrf ! reference-height quantities
-  
+
 
     !--- local functions --------------------------------
    real(R8)    :: qsat   ! function: the saturation humididty of air (kg/m^3)
@@ -310,7 +309,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    tdiff= tbot - ts
 
 !!.................................................................
-!! ocn_surface_flux_scheme = 0 : Default CESM1.2 
+!! ocn_surface_flux_scheme = 0 : Default CESM1.2
 !!                         = 1 : COARE algorithm
 !!                         = 2 : UA algorithm (separate subroutine)
 !!.................................................................
@@ -323,7 +322,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
      if (mask(n) /= 0) then
 
         !--- compute some needed quantities ---
-        vmag   = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
+        vmag   = max(seq_flux_atmocn_minwind, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
         if (use_coldair_outbreak_mod) then
             ! Cold Air Outbreak Modification:
             ! Increase windspeed for negative tbot-ts
@@ -346,7 +345,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         !--- neutral coefficients, z/L = 0.0 ---
         stable = 0.5_R8 + sign(0.5_R8 , delt)
         rdn    = sqrt(cdn(vmag))
-        rhn    = (1.0_R8-stable) * 0.0327_R8 + stable * 0.018_R8 
+        rhn    = (1.0_R8-stable) * 0.0327_R8 + stable * 0.018_R8
                  !(1.0_R8-stable) * chxcdu + stable * chxcds
         ren    = 0.0346_R8 !cexcd
 
@@ -467,15 +466,15 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
 
    else if (ocn_surface_flux_scheme .eq. 1) then
     !!.................................
-    !! use COARE algorithm 
+    !! use COARE algorithm
     !!.................................
-   
+
 
     DO n=1,nMax
      if (mask(n) /= 0) then
-    
+
         !--- compute some needed quantities ---
-        vmag    = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
+        vmag    = max(seq_flux_atmocn_minwind, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
 
          if (use_coldair_outbreak_mod) then
             ! Cold Air Outbreak Modification:
@@ -489,12 +488,12 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
          endif
         ssq    = 0.98_R8 * qsat(ts(n)) / rbot(n)   ! sea surf hum (kg/kg)
 
-        call cor30a(ubot(n),vbot(n),tbot(n),qbot(n),rbot(n) &  ! in atm params		
-                 & ,us(n),vs(n),ts(n),ssq                   &  ! in surf params		
-                 & ,zpbl,zbot(n),zbot(n),zref,ztref,ztref   &  ! in heights			
-                 & ,tau,hsb,hlb                             &  ! out: fluxes			
-                 & ,zo,zot,zoq,hol,ustar,tstar,qstar        &  ! out: ss scales		
-                 & ,rd,rh,re                                &  ! out: exch. coeffs		
+        call cor30a(ubot(n),vbot(n),tbot(n),qbot(n),rbot(n) &  ! in atm params
+                 & ,us(n),vs(n),ts(n),ssq                   &  ! in surf params
+                 & ,zpbl,zbot(n),zbot(n),zref,ztref,ztref   &  ! in heights
+                 & ,tau,hsb,hlb                             &  ! out: fluxes
+                 & ,zo,zot,zoq,hol,ustar,tstar,qstar        &  ! out: ss scales
+                 & ,rd,rh,re                                &  ! out: exch. coeffs
                  & ,trf,qrf,urf,vrf) ! out: reference-height params
 
 ! for the sake of maintaining same defs
@@ -502,18 +501,18 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         rd=sqrt(rd)
         rh=sqrt(rh)
         re=sqrt(re)
-       
+
         !--- momentum flux ---
-        taux(n) = tau * (ubot(n)-us(n)) / vmag 
-        tauy(n) = tau * (vbot(n)-vs(n)) / vmag 
-        
+        taux(n) = tau * (ubot(n)-us(n)) / vmag
+        tauy(n) = tau * (vbot(n)-vs(n)) / vmag
+
         !--- heat flux ---
         sen (n) =  hsb
         lat (n) =  hlb
-        lwup(n) = -shr_const_stebol * ts(n)**4 
-      
+        lwup(n) = -shr_const_stebol * ts(n)**4
+
         !--- water flux ---
-        evap(n) = lat(n)/shr_const_latvap 
+        evap(n) = lat(n)/shr_const_latvap
 
         !---water isotope flux ---
         call wiso_flxoce(2,rbot(n),zbot(n),s16O(n),ts(n),r16O(n),ustar,re,ssq, evap_16O(n), &
@@ -528,7 +527,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         !------------------------------------------------------------
         tref(n) = trf
         qref(n) = qrf
-        duu10n(n) = urf**2+vrf**2 
+        duu10n(n) = urf**2+vrf**2
 
         !------------------------------------------------------------
         ! optional diagnostics, needed for water tracer fluxes (dcn)
@@ -545,7 +544,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         lat      (n) = spval  ! latent           heat flux  (W/m^2)
         lwup     (n) = spval  ! long-wave upward heat flux  (W/m^2)
         evap     (n) = spval  ! evaporative water flux ((kg/s)/m^2)
-        evap_16O (n) = spval  ! water tracer flux (kg/s)/m^2) 
+        evap_16O (n) = spval  ! water tracer flux (kg/s)/m^2)
         evap_HDO (n) = spval  ! HDO tracer flux  (kg/s)/m^2)
         evap_18O (n) = spval  ! H218O tracer flux (kg/s)/m^2)
         taux     (n) = spval  ! x surface stress (N)
@@ -565,7 +564,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
       call shr_sys_abort(subName//" subroutine shr_flux_atmOcn requires ocn_surface_flux_scheme = 0 or 1")
 
    endif  !! ocn_surface_flux_scheme
-   
+
 
 END subroutine shr_flux_atmOcn
 
@@ -573,21 +572,21 @@ END subroutine shr_flux_atmOcn
 !===============================================================================
 ! !BOP =========================================================================
 !
-! !IROUTINE: shr_flux_atmOcn_UA -- internal atm/ocn flux calculation 
+! !IROUTINE: shr_flux_atmOcn_UA -- internal atm/ocn flux calculation
 !
 ! !DESCRIPTION:
 !
 !     Internal atm/ocn flux calculation
 !     using University of Arizona method.
 !
-!     Reference: 
-!         Zeng, X., M. Zhao, and R.E. Dickinson, 1998: Intercomparison of Bulk 
-!             Aerodynamic Algorithms for the Computation of Sea Surface Fluxes 
-!             Using TOGA COARE and TAO Data. J. Climate, 11, 2628–2644, 
+!     Reference:
+!         Zeng, X., M. Zhao, and R.E. Dickinson, 1998: Intercomparison of Bulk
+!             Aerodynamic Algorithms for the Computation of Sea Surface Fluxes
+!             Using TOGA COARE and TAO Data. J. Climate, 11, 2628–2644,
 !             https://doi.org/10.1175/1520-0442(1998)011<2628%3AIOBAAF>2.0.CO%3B2
 !
-!     Equation numbers are from this paper. 
-!     
+!     Equation numbers are from this paper.
+!
 ! !REVISION HISTORY:
 !     2017-Aug-28 - J. Reeves Eyre - code re-written for E3SM
 !     2018-Oct-30 - J. Reeves Eyre - bug fix and add
@@ -599,7 +598,7 @@ END subroutine shr_flux_atmOcn
 
 SUBROUTINE shr_flux_atmOcn_UA(   &
            &               nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  &
-           &               qbot  ,s16O  ,sHDO  ,s18O  ,rbot  ,   & 
+           &               qbot  ,s16O  ,sHDO  ,s18O  ,rbot  ,   &
            &               tbot  , pslv ,us    , vs   ,   &
            &               ts    ,mask  ,sen   ,lat   ,lwup  ,   &
            &               r16O, rhdo, r18O, &
@@ -627,12 +626,12 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
    real(R8)   ,intent(in) :: s16O (nMax) ! atm H216O tracer conc. (kg/kg)
    real(R8)   ,intent(in) :: sHDO (nMax) ! atm HDO tracer conc.  (kg/kg)
    real(R8)   ,intent(in) :: s18O (nMax) ! atm H218O tracer conc. (kg/kg)
-   real(R8)   ,intent(in) :: r16O (nMax) ! ocn H216O tracer ratio/Rstd  
-   real(R8)   ,intent(in) :: rHDO (nMax) ! ocn HDO tracer ratio/Rstd   
-   real(R8)   ,intent(in) :: r18O (nMax) ! ocn H218O tracer ratio/Rstd   
+   real(R8)   ,intent(in) :: r16O (nMax) ! ocn H216O tracer ratio/Rstd
+   real(R8)   ,intent(in) :: rHDO (nMax) ! ocn HDO tracer ratio/Rstd
+   real(R8)   ,intent(in) :: r18O (nMax) ! ocn H218O tracer ratio/Rstd
    real(R8)   ,intent(in) :: rbot (nMax) ! atm air density       (kg/m^3)
-   real(R8)   ,intent(in) :: tbot (nMax) ! atm T                 (K) 
-   real(R8)   ,intent(in) :: pslv (nMax) ! sea level pressure    (Pa) 
+   real(R8)   ,intent(in) :: tbot (nMax) ! atm T                 (K)
+   real(R8)   ,intent(in) :: pslv (nMax) ! sea level pressure    (Pa)
    real(R8)   ,intent(in) :: us   (nMax) ! ocn u-velocity        (m/s)
    real(R8)   ,intent(in) :: vs   (nMax) ! ocn v-velocity        (m/s)
    real(R8)   ,intent(in) :: ts   (nMax) ! ocn temperature       (K)
@@ -654,7 +653,7 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
    real(R8),intent(out),optional :: ustar_sv(nMax) ! diag: ustar
    real(R8),intent(out),optional :: re_sv   (nMax) ! diag: sqrt of exchange coefficient (water)
    real(R8),intent(out),optional :: ssq_sv  (nMax) ! diag: sea surface humidity  (kg/kg)
- 
+
    real(R8),intent(in) ,optional :: missval        ! masked value
 
 ! !EOP
@@ -668,8 +667,8 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
    real(R8),parameter :: beta = 1.0_R8     ! constant used in W* calculation (-)
    real(R8),parameter :: zpbl = 1000.0_R8  ! PBL height used in W* calculation (m)
    real(R8),parameter :: gamma = 0.0098_R8         ! Dry adiabatic lapse rate (K/m)
-   real(R8),parameter :: onethird = 1.0_R8/3.0_R8  ! Used repeatedly. 
-   
+   real(R8),parameter :: onethird = 1.0_R8/3.0_R8  ! Used repeatedly.
+
    !--- local variables --------------------------------
    integer(IN) :: n          ! vector loop index
    integer(IN) :: i          ! iteration loop index
@@ -683,13 +682,13 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
    real(R8)    :: ssq        ! sea surface humidity     (kg/kg)
    real(R8)    :: delth      ! potential T difference   (K)
    real(R8)    :: delthv     ! virtual potential T difference   (K)
-   real(R8)    :: delq       ! humidity difference      (kg/kg)           
-   real(R8)    :: ustar      ! friction velocity (m s-1)             
-   real(R8)    :: qstar      ! humidity scaling parameter (kg/kg)         
+   real(R8)    :: delq       ! humidity difference      (kg/kg)
+   real(R8)    :: ustar      ! friction velocity (m s-1)
+   real(R8)    :: qstar      ! humidity scaling parameter (kg/kg)
    real(R8)    :: tstar      ! temperature scaling parameter (K)
-   real(R8)    :: thvstar    ! virtual temperature scaling parameter (K)         
+   real(R8)    :: thvstar    ! virtual temperature scaling parameter (K)
    real(R8)    :: wstar      ! convective velocity scale (m s-1)
-   real(R8)    :: zeta       ! dimensionless height (z / Obukhov length) 
+   real(R8)    :: zeta       ! dimensionless height (z / Obukhov length)
    real(R8)    :: obu        ! Obukhov length (m)
    real(R8)    :: tau        ! magnitude of wind stress (N m-2)
    real(R8)    :: cp         ! specific heat of moist air (J kg-1 K-1)
@@ -702,17 +701,17 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
    real(R8)    :: zot        ! Roughness length for heat (m)
    real(R8)    :: u10        ! 10-metre wind speed (m s-1)
    real(R8)    :: re         ! Moisture exchange coefficient for compatibility
-                             ! with default algorithm. 
+                             ! with default algorithm.
    real(R8)    :: spval      ! local missing value
    real(R8)    :: loc_epsilon  ! Ratio of gas constants (-)
-   
+
    !--- for cold air outbreak calc --------------------------------
    real(R8)    :: tdiff(nMax)  ! tbot - ts
    real(R8)    :: vscl
- 
+
    !--- formats ----------------------------------------
    character(*),parameter :: subName = '(shr_flux_atmOcn) '
-   character(*),parameter ::   F00 = "('(shr_flux_atmOcn) ',4a)"     
+   character(*),parameter ::   F00 = "('(shr_flux_atmOcn) ',4a)"
 
    !-----
    ! Straight from original subroutine.
@@ -724,19 +723,19 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
       spval = shr_const_spval
    endif
    !-----
-   
+
    ! Evaluate loc_epsilon.
-   loc_epsilon = 1.0_R8 / (1.0_R8 + loc_zvir)     
+   loc_epsilon = 1.0_R8 / (1.0_R8 + loc_zvir)
 
   !--- for cold air outbreak calc --------------------------------
    tdiff = tbot - ts
 
    ! Loop over grid points.
    DO n=1,nMax
-     if (mask(n) /= 0) then    
+     if (mask(n) /= 0) then
 
      !-----Calculate some required near surface variables.---------
-        vmag_abs = sqrt( ubot(n)**2 + vbot(n)**2 )                          
+        vmag_abs = sqrt( ubot(n)**2 + vbot(n)**2 )
         vmag_rel = sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2 )
 
         ! For Cold Air Outbreak Modification (based on Mahrt & Sun 1995,MWR):
@@ -747,12 +746,12 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
                vmag_rel=vmag_rel*vscl
             endif
          endif
-         
+
         delth = thbot(n) - ts(n)                     ! Pot. temp. difference with surface (K)
                                                      ! Note this is equivalent to Zeng et al
                                                      ! (1998) version = delt + 0.0098*zbot
         thv = thbot(n)*(1.0_R8+0.61_R8*qbot(n))      ! Virtual potential temperature (K)
-        ! EQN (17):                                  
+        ! EQN (17):
         !ssq = 0.98_R8 * qsat_ua(ts(n),ps, &          ! Surface specific humidity (kg kg-1)
         !                        loc_epsilon)
         ssq = 0.98_R8 * qsat_ua(ts(n),pslv(n), &     ! Surface specific humidity (kg kg-1)
@@ -766,10 +765,10 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
         tbot_oC = tbot(n) - loc_tkfrz
         visa = 1.326e-5_R8 * (1.0_R8 + &             ! Kinematic viscosity of dry
              & 6.542e-3_R8*tbot_oC + &               ! air (m2 s-1) from Andreas (1989)
-             & 8.301e-6_R8*tbot_oC*tbot_oC - &       ! CRREL Rep. 89-11    
-             & 4.84e-9_R8*tbot_oC*tbot_oC*tbot_oC)  
+             & 8.301e-6_R8*tbot_oC*tbot_oC - &       ! CRREL Rep. 89-11
+             & 4.84e-9_R8*tbot_oC*tbot_oC*tbot_oC)
         cp = loc_cpdair*(1.0_R8 + loc_cpvir*ssq)     ! specific heat of moist air (J kg-1 K-1)
-  
+
      !-----Initial values of u* and convective velocity.-----------
         ustar = 0.06_R8
         wstar = 0.5_R8
@@ -778,7 +777,7 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
             ! EQN (19)
             vmag = sqrt( vmag_rel**2 + beta*beta*wstar*wstar )
         else
-           ! EQN (18) 
+           ! EQN (18)
             vmag = max(umin,vmag_rel)
         endif
 
@@ -792,31 +791,31 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
 
      !-----Assess stability.---------------------------------------
         rb = loc_g*zbot(n)*delthv / (thv*vmag*vmag)    ! bulk Richardson number
-     
-        if(rb.ge.0.0_R8) then 
-            ! Neutral or stable: EQNs (4), (9), (13) and definition of rb. 
+
+        if(rb.ge.0.0_R8) then
+            ! Neutral or stable: EQNs (4), (9), (13) and definition of rb.
             zeta = rb*log(zbot(n)/zo) / &
                  & (1.0_R8 - 5.0_R8*min(rb,0.19_R8))
-        else  
+        else
             ! Unstable: EQNs (4), (8), (12) and definition of rb.
             zeta = rb*log(zbot(n)/zo)
         endif
-     
+
         obu = zbot(n)/zeta                             ! Obukhov length
         obu = sign(max(zbot(n)/10.0_R8, abs(obu)), obu)
-      
+
      !-----Main iterations (2-10 iterations would be fine).-------
         do i=1,10
 
-            ! Update roughness lengths. 
+            ! Update roughness lengths.
             call rough_ua(zo,zot,zoq,ustar,visa)
-        
+
             ! Wind variables.
             zeta = zbot(n) / obu
-            if (zeta.lt.zetam) then 
+            if (zeta.lt.zetam) then
                 ! Very unstable regime
                 ! EQN (7) with extra z0 term.
-                ustar = loc_karman * vmag / (log(zetam*obu/zo) - & 
+                ustar = loc_karman * vmag / (log(zetam*obu/zo) - &
                      & psi_ua(1_IN, zetam) + &
                      & psi_ua(1_IN, zo/obu) + &
                      & 1.14_R8 * ((-zeta)**onethird - (-zetam)**onethird) )
@@ -825,49 +824,49 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
                 ! EQN (8) with extra z0 term.
                 ustar = loc_karman * vmag / (log(zbot(n)/zo) - &
                     & psi_ua(1_IN,zeta) + psi_ua(1_IN,zo/obu) )
-            else if (zeta.le.1.0_R8) then 
+            else if (zeta.le.1.0_R8) then
                 ! Stable regime
                 ! EQN (9) with extra z0 term.
                 ustar = loc_karman * vmag / (log(zbot(n)/zo) + &
                     & 5.0_R8*zeta - 5.0_R8*zo/obu)
-            else 
+            else
                 ! Very stable regime
                 ! EQN (10) with extra z0 term.
                 ustar = loc_karman * vmag / (log(obu/zo) + 5.0_R8 - &
                      &  5.0_R8*zo/obu + &
                      &  (5.0_R8*log(zeta) + zeta - 1.0_R8) )
             endif
-  
+
             ! Temperature variables.
-            if(zeta.lt.zetat) then 
+            if(zeta.lt.zetat) then
                 ! Very unstable regime
                 ! EQN (11) with extra z0 term.
                 tstar = loc_karman * delth / (log(zetat*obu/zot) - &
                       & psi_ua(2_IN, zetat) + &
                       & psi_ua(2_IN, zot/obu) + &
                       & 0.8_R8*((-zetat)**(-onethird) - (-zeta)**(-onethird)) )
-            else if (zeta.lt.0.0_R8) then 
+            else if (zeta.lt.0.0_R8) then
                 ! Unstable regime
                 ! EQN (12) with extra z0 term.
                 tstar = loc_karman * delth / &
                       & (log(zbot(n)/zot) - psi_ua(2_IN,zeta) + psi_ua(2_IN,zot/obu))
-            else if (zeta.le.1.0_R8) then 
+            else if (zeta.le.1.0_R8) then
                 ! Stable regime
                 ! EQN (13) with extra z0 term.
                 tstar = loc_karman * delth / (log(zbot(n)/zot) + &
                     &   5.0_R8*zeta - 5.0_R8*zot/obu)
-            else      
+            else
                 ! Very stable regime
-                ! EQN (14) with extra z0 term.   
+                ! EQN (14) with extra z0 term.
                 tstar = loc_karman * delth / (log(obu/zot) + &
                     &   5.0_R8 - 5.0_R8*zot/obu  + &
                     &   (5.0_R8*log(zeta) + zeta - 1.0_R8) )
             endif
-        
+
             ! Humidity variables.
             ! This is done with re to give variable to save out like
             ! in old algorithm.
-            if (zeta.lt.zetat) then 
+            if (zeta.lt.zetat) then
                 ! Very unstable regime
                 ! EQN (11) with extra z0 term.
                 re = loc_karman / (log(zetat*obu/zoq) - psi_ua(2_IN,zetat) + &
@@ -875,62 +874,62 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
                    & 0.8_R8*((-zetat)**(-onethird) - (-zeta)**(-onethird)) )
             else if (zeta.lt.0.0_R8) then
                 ! Unstable regime
-                ! EQN (12) with extra z0 term.  
+                ! EQN (12) with extra z0 term.
                 re = loc_karman / &
                    & (log(zbot(n)/zoq) - psi_ua(2_IN,zeta) + psi_ua(2_IN,zoq/obu))
-            else if (zeta.le.1.0_R8) then 
+            else if (zeta.le.1.0_R8) then
                 ! Stable regime
                 ! EQN (13) with extra z0 term.
                 re = loc_karman / &
                    & (log(zbot(n)/zoq) + 5.0_R8*zeta - 5.0_R8*zoq/obu)
-            else  
+            else
                 ! Very stable regime
-                ! EQN (14) with extra z0 term.  
+                ! EQN (14) with extra z0 term.
                 re = loc_karman / &
                    & (log(obu/zoq) + 5.0_R8 - 5.0_R8*zoq/obu + &
                    & (5.0_R8*log(zeta) + zeta - 1.0_R8) )
              endif
              qstar = re * delq
 
-            ! Update Obukhov length. 
+            ! Update Obukhov length.
             thvstar = tstar*(1.0_R8 + 0.61_R8*qbot(n)) + 0.61_R8*thbot(n)*qstar
             ! EQN (4)
             obu = ustar*ustar * thv / (loc_karman*loc_g*thvstar)
             obu = sign( max(zbot(n)/10.0_R8, abs(obu)) ,obu)
-        
-            ! Update wind speed if in unstable regime. 
+
+            ! Update wind speed if in unstable regime.
             if (delthv.lt.0.0_R8) then
                 ! EQN (20)
                 wstar = beta * (-loc_g*ustar*thvstar*zpbl/thv)**onethird
                 ! EQN (19)
                 vmag = sqrt(vmag_rel**2 + wstar*wstar)
              else
-                ! EQN (18) 
+                ! EQN (18)
                 vmag = max(umin,vmag_rel)
             endif
-        
-        enddo ! End of iterations for ustar, tstar, qstar etc. 
+
+        enddo ! End of iterations for ustar, tstar, qstar etc.
 
 
      !-----Calculate fluxes and wind stress.---------------------
 
         !--- momentum flux ---
-        ! This should ensure zero wind stress when (relative) wind speed is zero, 
-        ! components are consistent with total, and we don't ever divide by zero. 
+        ! This should ensure zero wind stress when (relative) wind speed is zero,
+        ! components are consistent with total, and we don't ever divide by zero.
         ! EQN (21)
-        tau = rbot(n) * ustar * ustar 
+        tau = rbot(n) * ustar * ustar
         taux(n) = tau * (ubot(n)-us(n)) / max(umin, vmag_rel)
         tauy(n) = tau * (vbot(n)-vs(n)) / max(umin, vmag_rel)
-        
+
         !--- heat flux ---
         ! EQNs (22) and (23)
-        sen (n) =  cp * rbot(n) * tstar * ustar 
+        sen (n) =  cp * rbot(n) * tstar * ustar
         lat (n) = xlv * rbot(n) * qstar * ustar
-        lwup(n) = -loc_stebol * ts(n)**4 
-      
+        lwup(n) = -loc_stebol * ts(n)**4
+
         !--- water flux ---
-        evap(n) = lat(n)/xlv 
-    
+        evap(n) = lat(n)/xlv
+
         !---water isotope flux ---
         call wiso_flxoce(2,rbot(n),zbot(n),s16O(n),ts(n),r16O(n),ustar,re,ssq,evap_16O(n), &
                          qbot(n),evap(n))
@@ -942,7 +941,7 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
         !------------------------------------------------------------
         ! compute diagnositcs: 2m ref T & Q, 10m wind speed squared
         !------------------------------------------------------------
-     
+
         zeta = zbot(n) / obu
         if (zeta.lt.zetat) then
             if (zeta.lt.zetam) then
@@ -951,20 +950,20 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
                u10 = vmag_abs + (ustar/loc_karman) * &
                    & 1.14_R8 * ((-zref/obu)**onethird - (-zeta)**onethird)
             else
-               ! Unstable regime for U. 
+               ! Unstable regime for U.
                ! EQN (8)
                u10 = vmag_abs + (ustar/loc_karman) * &
                    & (log(zref/zbot(n)) - (psi_ua(1_IN,zref/obu) - psi_ua(1_IN,zeta)) )
-            endif       
+            endif
             ! Very unstable regime for T and q.
             ! EQN (11)
             tref(n) = thbot(n) + (tstar/loc_karman) * &
                     & 0.8_R8 * ((-zeta)**(-onethird) - (-ztref/obu)**(-onethird))
             qref(n) = qbot(n) + (qstar/loc_karman) * &
                     & 0.8_R8 * ((-zeta)**(-onethird) - (-ztref/obu)**(-onethird))
-            
+
         else if (zeta.lt.0.0_R8) then
-            ! Unstable regime. 
+            ! Unstable regime.
             ! EQN (8)
             u10 = vmag_abs + (ustar/loc_karman) * &
                 & (log(zref/zbot(n)) - (psi_ua(1_IN,zref/obu) - psi_ua(1_IN,zeta)) )
@@ -973,8 +972,8 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
                     & (log(ztref/zbot(n)) - (psi_ua(2_IN,ztref/obu) - psi_ua(2_IN,zeta)) )
             qref(n) = qbot(n) + (qstar/loc_karman) * &
                     & (log(ztref/zbot(n)) - (psi_ua(2_IN,ztref/obu) - psi_ua(2_IN,zeta)) )
-        else if (zeta.le.1.0_R8) then 
-            ! Stable regime. 
+        else if (zeta.le.1.0_R8) then
+            ! Stable regime.
             ! EQN (9)
             u10 = vmag_abs + (ustar/loc_karman) * &
                 & (log(zref/zbot(n)) + 5.0_R8*zref/obu - 5.0_R8*zeta)
@@ -993,9 +992,9 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
                     & (5.0_R8*log(ztref/zbot(n)) + ztref/obu - zeta)
             qref(n) = qbot(n) + (qstar/loc_karman) * &
                     & (5.0_R8*log(ztref/zbot(n)) + ztref/obu - zeta)
-            
+
         endif
- 
+
         tref(n) = tref(n) - gamma*ztref   ! pot. temp to temp correction
         duu10n(n) = u10*u10 ! 10m wind speed squared
 
@@ -1016,7 +1015,7 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
         lat   (n) = spval  ! latent           heat flux  (W/m^2)
         lwup  (n) = spval  ! long-wave upward heat flux  (W/m^2)
         evap  (n) = spval  ! evaporative water flux ((kg/s)/m^2)
-        evap_16O (n) = spval !water tracer flux (kg/s)/m^2) 
+        evap_16O (n) = spval !water tracer flux (kg/s)/m^2)
         evap_HDO (n) = spval !HDO tracer flux  (kg/s)/m^2)
         evap_18O (n) = spval !H218O tracer flux (kg/s)/m^2)
         taux  (n) = spval  ! x surface stress (N)
@@ -1032,7 +1031,7 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
      endif
 
    ENDDO ! loop over grid points
-     
+
 END subroutine shr_flux_atmOcn_UA
 
 !===============================================================================
@@ -1044,12 +1043,12 @@ END subroutine shr_flux_atmOcn_UA
 real(R8) function psi_ua(k,zeta)
 
        implicit none
-   
+
        !-----Input variables.----------
        integer(IN), intent(in) :: k       ! Indicates whether this is for momentum (k=1)
                                           ! or for heat/moisture (k=2)
        real(R8), intent(in) :: zeta       ! Dimensionless height (=z/L)
-   
+
        !-----Local variables.----------
        real(R8) :: chik                   ! Function of zeta.
 
@@ -1065,15 +1064,15 @@ real(R8) function psi_ua(k,zeta)
           ! EQN (15) for heat/moisture
           psi_ua = 2.0_R8 * log((1.0_R8 + chik*chik)*0.5_R8)
        endif
-       
+
 end function psi_ua
-     
+
 !===============================================================================
    ! Uses Tetens' formula for saturation vapor pressure from
    ! Buck(1981) JAM 20, 1527-1532
-            
+
 real(R8) function qsat_ua(t,p,loc_epsilon)
-               
+
        implicit none
 
        !-----Input variables.----------
@@ -1083,16 +1082,16 @@ real(R8) function qsat_ua(t,p,loc_epsilon)
 
        !-----Local variables.----------
        real(R8) :: esat                    ! saturated vapor pressure (hPa)
-     
+
        ! Calculate saturated vapor pressure in hPa.
        esat = (1.0007_R8 + 0.00000346_R8 * (p/100.0_R8)) * 6.1121_R8 * &
             & exp(17.502_R8 * (t - loc_tkfrz) / (240.97_R8 + (t - loc_tkfrz)))
 
        ! Convert to specific humidity (kg kg-1).
        qsat_ua = loc_epsilon * esat / ((p/100.0_R8) - (1.0_R8 - loc_epsilon)*esat)
-     
+
 end function qsat_ua
-     
+
 !===============================================================================
    !Calculate roughness lengths: zo, zot, zoq.
 
@@ -1115,7 +1114,7 @@ subroutine rough_ua(zo,zot,zoq,ustar,visa)
        real(R8) :: xt                     ! Logarithm of roughness length ratios (heat)
 
        zo = 0.013_R8*ustar*ustar/loc_g + 0.11_R8*visa/ustar      ! EQN (24)
-       re_rough = ustar*zo/visa                                  ! By definition. 
+       re_rough = ustar*zo/visa                                  ! By definition.
        xq = 2.67_R8*re_rough**0.25_R8 - 2.57_R8                  ! EQN (25)
        xt = xq                                                   ! EQN (26)
        zoq = zo/exp(xq)                                          ! By definition of xq
@@ -1124,7 +1123,7 @@ subroutine rough_ua(zo,zot,zoq,ustar,visa)
 end subroutine rough_ua
 
 
-   
+
 real(R8) elemental function cuberoot(a)
   real(R8), intent(in) :: a
   real(R8), parameter :: one_third = 1._R8/3._R8
@@ -1152,7 +1151,8 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                           (nMax  ,zbot  ,ubot  ,vbot  ,thbot ,             &
                            qbot  ,s16O  ,sHDO  ,s18O  ,rbot  ,             &
                            tbot  ,us    ,vs    ,                           &
-                           ts    ,mask  ,sen   ,lat   ,lwup  ,             &
+                           ts    ,mask  , seq_flux_atmocn_minwind,         &
+                           sen   ,lat   ,lwup  ,                           &
                            r16O  ,rhdo  ,r18O  ,evap  ,evap_16O,           &
                            evap_HDO     ,evap_18O,                         &
                            taux  ,tauy  ,tref  ,qref  ,                    &
@@ -1199,7 +1199,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8),intent(inout) :: ocnsal(nMax)       ! NEW (kg/kg)
    logical ,intent(in)    :: ocn_prognostic     ! NEW
    logical ,intent(in)    :: flux_diurnal       ! NEW logical for diurnal on/off
-   integer(IN) ,intent(in)    :: ocn_surface_flux_scheme 
+   integer(IN) ,intent(in)    :: ocn_surface_flux_scheme
 
    real(R8),intent(in)    :: uGust (nMax)      ! NEW not used
    real(R8),intent(in)    :: lwdn  (nMax)       ! NEW
@@ -1231,6 +1231,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    integer(IN),intent(in) :: secs               ! NEW  elsapsed seconds in day (GMT)
    integer(IN),intent(in) :: dt                 ! NEW
    logical ,intent(in)    :: cold_start         ! cold start flag
+   real(R8),intent(in)    :: seq_flux_atmocn_minwind   ! minimum wind speed for atmocn      (m/s)
 
    real(R8),intent(in) ,optional :: missval     ! masked value
 
@@ -1256,7 +1257,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
 
 
    !--- local constants --------------------------------
-   real(R8),parameter :: umin  =  0.5_R8 ! minimum wind speed       (m/s)
    real(R8),parameter :: zref  = 10.0_R8 ! reference height           (m)
    real(R8),parameter :: ztref =  2.0_R8 ! reference height for air T (m)
 
@@ -1460,7 +1460,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
 
          !--- compute some initial and useful flux quantities ---
 
-         vmag     = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
+         vmag     = max(seq_flux_atmocn_minwind, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
          if (use_coldair_outbreak_mod) then
             ! Cold Air Outbreak Modification:
             ! Increase windspeed for negative tbot-ts
@@ -1549,7 +1549,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                        & ,us(n),vs(n),tBulk(n),ssq                &  ! in surf params (NB ts -> tBulk)
                        & ,zpbl,zbot(n),zbot(n),zref,ztref,ztref   &  ! in heights
                        & ,tau,hsb,hlb                             &  ! out: fluxes
-                       & ,zo,zot,zoq,hol,ustar,tstar,qstar        &  ! out: ss scales	
+                       & ,zo,zot,zoq,hol,ustar,tstar,qstar        &  ! out: ss scales
                        & ,rd,rh,re                                &  ! out: exch. coeffs
                        & ,trf,qrf,urf,vrf)			       ! out: reference-height params
              ! for the sake of maintaining same defs
@@ -1563,7 +1563,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             call shr_sys_abort(subName//" shr_flux_atmOcn_diurnal requires ocn_surface_flux_scheme = 0 or 1")
          ENDIF
 
-        
+
         ustar_prev = ustar * 2.0_R8
         iter = 0
         ! --- iterate ---
@@ -1666,7 +1666,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             !--- UPDATE FLUX ITERATION ---
 
 !!.................................................................
-!! ocn_surface_flux_scheme = 0 : Default CESM1.2 
+!! ocn_surface_flux_scheme = 0 : Default CESM1.2
 !!                         = 1 : COARE algorithm
 !!.................................................................
          if (ocn_surface_flux_scheme .eq. 0) then! use Large algorithm
@@ -1707,11 +1707,11 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
 
          else if (ocn_surface_flux_scheme .eq. 1) then! use COARE algorithm
 
-            call cor30a(ubot(n),vbot(n),tbot(n),qbot(n),rbot(n) &  ! in atm params	
+            call cor30a(ubot(n),vbot(n),tbot(n),qbot(n),rbot(n) &  ! in atm params
                      & ,us(n),vs(n),tBulk(n),ssq                &  ! in surf params (NB ts -> tBulk)
                      & ,zpbl,zbot(n),zbot(n),zref,ztref,ztref   &  ! in heights
                      & ,tau,hsb,hlb                             &  ! out: fluxes
-                     & ,zo,zot,zoq,hol,ustar,tstar,qstar        &  ! out: ss scales	
+                     & ,zo,zot,zoq,hol,ustar,tstar,qstar        &  ! out: ss scales
                      & ,rd,rh,re                                &  ! out: exch. coeffs
                      & ,trf,qrf,urf,vrf)			       ! out: reference-height params
             ! for the sake of maintaining same defs
@@ -1728,13 +1728,13 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
          else ! N.B.: NO ocn_surface_flux_scheme=2 option
                call shr_sys_abort(subName//", flux_diurnal requires ocn_surface_flux_scheme = 0 or 1")
          endif
-         
+
          ENDDO   ! end iteration loop
          if (iter < 1) then
             call shr_sys_abort('No iterations performed ' // errMsg(sourcefile, __LINE__))
          end if
          !--- COMPUTE FLUXES TO ATMOSPHERE AND OCEAN ---
-         
+
          ! Now calculated further up in subroutine.
          !tau = rbot(n) * ustar * ustar
          !sen (n) =                cp * tau * tstar / ustar
@@ -1744,7 +1744,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
          taux(n) = tau * (ubot(n)-us(n)) / vmag
          tauy(n) = tau * (vbot(n)-vs(n)) / vmag
 
-         !--- LW radiation --- 
+         !--- LW radiation ---
          lwup(n) = -shr_const_stebol * Tskin(n)**4
 
          !--- water flux ---
@@ -1781,7 +1781,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
 
          tref(n) = trf
          qref(n) = qrf
-         duu10n(n) = urf**2+vrf**2 
+         duu10n(n) = urf**2+vrf**2
          u10n = sqrt(duu10n(n))
       endif
 
@@ -2296,25 +2296,25 @@ end subroutine shr_flux_MOstability
 ! !DESCRIPTION:
 !
 !   COARE v3.0 parametrisation
-!     
+!
 ! !REVISION HISTORY:
 !   2013-Nov-22: Thomas Toniazzo's adaptation of Chris Fairall's code,
 !    downloaded from
 !    ftp://ftp1.esrl.noaa.gov/users/cfairall/wcrp_wgsf/computer_programs/cor3_0/
 !     * no wave, standard coare 2.6 charnock
 !     * skin parametrisation also off (would require radiative fluxes and
-!      rainrate in input) 
+!      rainrate in input)
 !     * added diagnostics, comments and references
 !===============================================================================
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine cor30a(ubt,vbt,tbt,qbt,rbt        &    ! in atm params		
-               & ,uss,vss,tss,qss            &    ! in surf params		
-               & ,zbl,zbu,zbt,zrfu,zrfq,zrft &    ! in heights			
-               & ,tau,hsb,hlb                &    ! out: fluxes			
-               & ,zo,zot,zoq,L,usr,tsr,qsr   &    ! out: ss scales		
-               & ,Cd,Ch,Ce                   &    ! out: exch. coeffs		
+subroutine cor30a(ubt,vbt,tbt,qbt,rbt        &    ! in atm params
+               & ,uss,vss,tss,qss            &    ! in surf params
+               & ,zbl,zbu,zbt,zrfu,zrfq,zrft &    ! in heights
+               & ,tau,hsb,hlb                &    ! out: fluxes
+               & ,zo,zot,zoq,L,usr,tsr,qsr   &    ! out: ss scales
+               & ,Cd,Ch,Ce                   &    ! out: exch. coeffs
                & ,trf,qrf,urf,vrf)                ! out: reference-height params
 
 ! !USES:
@@ -2329,7 +2329,7 @@ real(R8),intent(out):: tau,hsb,hlb,zo,zot,zoq,L,usr,tsr,qsr,Cd,Ch,Ce &
                     & ,trf,qrf,urf,vrf
 ! !EOP
 
-real ua,va,ta,q,rb,us,vs,ts,qs,zi,zu,zt,zq,zru,zrq,zrt ! internal vars
+real(R8) ua,va,ta,q,rb,us,vs,ts,qs,zi,zu,zt,zq,zru,zrq,zrt ! internal vars
 
 real(R8):: cpa,rgas,grav,pi,von,beta ! phys. params
 real(R8):: le,rhoa,cpv               ! derived phys. params
@@ -2341,8 +2341,8 @@ real(R8):: cdn_10,chn_10,cen_10  ! aux. output vars
 
 integer(IN):: i,nits ! iter loop counters
 
-integer(IN):: jcool                  ! aux. cool-skin vars 
-real(R8):: dter,wetc,dqer 
+integer(IN):: jcool                  ! aux. cool-skin vars
+real(R8):: dter,wetc,dqer
 
 ua=ubt  !wind components (m/s) at height zu (m)
 va=vbt
@@ -2351,7 +2351,7 @@ Q =qbt  !bulk air spec hum (kg/kg), height zq
 rb=rbt  ! air density
 us=uss  !surface current components (m/s)
 vs=vss
-ts=tss  !bulk water temperature (K) if jcool=1, interface water T if jcool=0  
+ts=tss  !bulk water temperature (K) if jcool=1, interface water T if jcool=0
 qs=qss  !bulk water spec hum (kg/kg) if jcool=1 etc
 zi=zbl  !PBL depth (m)
 zu=zbu  !wind speed measurement height (m)
@@ -2362,113 +2362,113 @@ zrq=zrfq ! reference height for st.diagn.T,q
 zrt=zrft ! reference height for st.diagn.T,q
 
 !**** constants
-    Beta= 1.2 
-    von = 0.4 
-    pi  = 3.141593
-    grav= SHR_CONST_G 
+    Beta= 1.2_R8
+    von = 0.4_R8
+    pi  = 3.141593_R8
+    grav= SHR_CONST_G
     Rgas= SHR_CONST_RGAS
-    cpa = SHR_CONST_CPDAIR 
+    cpa = SHR_CONST_CPDAIR
 
 !*** physical parameters
-    Le  = SHR_CONST_LATVAP -.00237e6*(ts-273.16)
+    Le  = SHR_CONST_LATVAP -.00237e6_R8*(ts-273.16_R8)
 !   cpv = shr_const_cpdair*(1.0_R8 + shr_const_cpvir*Qs) ! form in NCAR code
-    cpv = cpa*(1+0.84*Q) 
+    cpv = cpa*(1.0_R8+0.84_R8*Q)
 !   rhoa= P/(Rgas*ta*(1+0.61*Q)) ! if input were pressure
     rhoa= rb
 
 ! parametrisation for air kinematic viscosity (Andreas 1989,p.31)
-    t   = ta-273.16
-    visa= 1.326e-5*(1+6.542e-3*t+8.301e-6*t*t-4.84e-9*t*t*t) 
+    t   = ta-273.16_R8
+    visa= 1.326e-5_R8*(1.0_R8+6.542e-3_R8*t+8.301e-6_R8*t*t-4.84e-9_R8*t*t*t)
 
     du  = sqrt((ua-us)**2+(va-vs)**2)
-    dt  = ts-ta -.0098*zt 
-    dq  = Qs-Q 
+    dt  = ts-ta -.0098_R8*zt
+    dq  = Qs-Q
 
 !*** don't use cool-skin params for now, but assign values to Ter and Qer
-jcool=0
-    dter=0.3  
-    wetc=0.622*Le*Qs/(Rgas*ts**2) 
-    dqer=wetc*dter 
+    jcool=0_IN
+    dter=0.3_R8
+    wetc=0.622_R8*Le*Qs/(Rgas*ts**2)
+    dqer=wetc*dter
 
 !***************** Begin bulk-model calculations ***************
-     
-!*************** first guess 
-    ug=.5 
 
-    ut   = sqrt(du*du+ug*ug) 
-    u10  = ut*log(10/1e-4)/log(zu/1e-4) 
-    usr  = .035*u10 
-    zo10 = 0.011*usr*usr/grav+0.11*visa/usr 
-    Cd10 = (von/log(10/zo10))**2 
-    Ch10 = 0.00115 
-    Ct10 = Ch10/sqrt(Cd10) 
-    zot10= 10/exp(von/Ct10) 
-    Cd   =(von/log(zu/zo10))**2 
-    Ct   = von/log(zt/zot10) 
-    CC   = von*Ct/Cd 
+!*************** first guess
+    ug=0.5_R8
+
+    ut   = sqrt(du*du+ug*ug)
+    u10  = ut*log(10.0_R8/1.0e-4_R8)/log(zu/1.0e-4_R8)
+    usr  = .035_R8*u10
+    zo10 = 0.011_R8*usr*usr/grav+0.11_R8*visa/usr
+    Cd10 = (von/log(10.0_R8/zo10))**2
+    Ch10 = 0.00115_R8
+    Ct10 = Ch10/sqrt(Cd10)
+    zot10= 10.0_R8/exp(von/Ct10)
+    Cd   =(von/log(zu/zo10))**2
+    Ct   = von/log(zt/zot10)
+    CC   = von*Ct/Cd
 
 ! Bulk Richardson number
-    Ribu=-grav*zu/ta*((dt-dter*jcool)+.61*ta*dq)/ut**2 
+    Ribu=-grav*zu/ta*((dt-dter*jcool)+.61_R8*ta*dq)/ut**2
 ! initial guess for stability parameter...
-    if (Ribu .LT. 0) then 
+    if (Ribu .LT. 0.0_R8) then
     ! pbl-height dependent
-        zetu=CC*Ribu/( 1- (.004*Beta**3*zi/zu) * Ribu ) 
-    else 
-        zetu=CC*Ribu*(1+27/9*Ribu/CC)
-    endif 
+        zetu=CC*Ribu/( 1.0_R8 - (.004_R8*Beta**3*zi/zu) * Ribu )
+    else
+        zetu=CC*Ribu*(1.0_R8 + 27.0_R8/9.0_R8*Ribu/CC)
+    endif
 ! ...and MO length
-    L10=zu/zetu 
+    L10=zu/zetu
 
-    if (zetu .GT. 50) then 
-        nits=1 
-    else 
-        nits=3 
-    endif 
+    if (zetu .GT. 50.0_R8) then
+        nits=1_IN
+    else
+        nits=3_IN
+    endif
 
     usr =  ut*von/(log(zu/zo10)-psiuo(zu/L10))
-    tsr = (dt-dter*jcool)*von/(log(zt/zot10)-psit_30(zt/L10)) 
-    qsr = (dq-dqer*jcool)*von/(log(zq/zot10)-psit_30(zq/L10)) 
+    tsr = (dt-dter*jcool)*von/(log(zt/zot10)-psit_30(zt/L10))
+    qsr = (dq-dqer*jcool)*von/(log(zq/zot10)-psit_30(zq/L10))
 
 ! parametrisation for Charney parameter (section 3c of Fairall et al. 2003)
-    charn=0.011 
-    if (ut .GT. 10) then
-      charn=0.011+(ut-10)/(18-10)*(0.018-0.011) 
-    endif 
-    if (ut .GT. 18) then
-      charn=0.018 
-    endif 
-        
+    charn=0.011_R8
+    if (ut .GT. 10.0_R8) then
+      charn=0.011_R8+(ut-10.0_R8)/(18.0_R8-10.0_R8)*(0.018_R8-0.011_R8)
+    endif
+    if (ut .GT. 18.0_R8) then
+      charn=0.018_R8
+    endif
+
 !***************  iteration loop ************
-    do i=1, nits 
-     
+    do i=1, nits
+
      ! stability parameter
-     zet=-von*grav*zu/ta*(tsr*(1+0.61*Q)+.61*ta*qsr)/(usr*usr)/(1+0.61*Q) 
+     zet=-von*grav*zu/ta*(tsr*(1.0_R8+0.61_R8*Q)+.61_R8*ta*qsr)/(usr*usr)/(1.0_R8+0.61_R8*Q)
 
      ! momentum roughness length...
-     zo = charn*usr*usr/grav+0.11*visa/usr  
+     zo = charn*usr*usr/grav+0.11_R8*visa/usr
      ! ...& MO length
-     L  = zu/zet 
+     L  = zu/zet
 
      ! tracer roughness length
-     rr = zo*usr/visa 
-     zoq= min(1.15e-4,5.5e-5/rr**.6) 
+     rr = zo*usr/visa
+     zoq= min(1.15e-4_R8,5.5e-5_R8/rr**.6_R8)
      zot= zoq ! N.B. same for vapour and heat
 
      ! new surface-layer scales
-     usr =  ut            *von/(log(zu/zo )-psiuo(zu/L)) 
-     tsr = (dt-dter*jcool)*von/(log(zt/zot)-psit_30(zt/L)) 
-     qsr = (dq-dqer*jcool)*von/(log(zq/zoq)-psit_30(zq/L)) 
+     usr =  ut            *von/(log(zu/zo )-psiuo(zu/L))
+     tsr = (dt-dter*jcool)*von/(log(zt/zot)-psit_30(zt/L))
+     qsr = (dq-dqer*jcool)*von/(log(zq/zoq)-psit_30(zq/L))
 
      ! gustiness parametrisation
-     Bf=-grav/ta*usr*(tsr+.61*ta*qsr) 
-     if (Bf .GT. 0) then
-       ug=Beta*(Bf*zi)**.333 
+     Bf=-grav/ta*usr*(tsr+.61_R8*ta*qsr)
+     if (Bf .GT. 0.0_R8) then
+       ug=Beta*(Bf*zi)**.333_R8
      else
-       ug=.2 
+       ug=.2_R8
      endif
-     ut=sqrt(du*du+ug*ug) 
+     ut=sqrt(du*du+ug*ug)
 
-    enddo 
+    enddo
 !***************     end loop    ************
 
 
@@ -2478,29 +2478,29 @@ jcool=0
    hlb=-rhoa*Le*usr*qsr                   !wv downwards
 
    !****** transfer coeffs relative to ut @meas. hts ******
-   Cd= tau/rhoa/ut/max(.1,du) 
+   Cd= tau/rhoa/ut/max(.1_R8,du)
    if (tsr.ne.0._r8) then
     Ch= usr/ut*tsr/(dt-dter*jcool)
    else
     Ch= usr/ut* von/(log(zt/zot)-psit_30(zt/L))
    endif
-   if (qsr.ne.0) then
+   if (qsr.ne.0.0_R8) then
     Ce= usr/ut*qsr/(dq-dqer*jcool)
    else
     Ce= usr/ut* von/(log(zq/zoq)-psit_30(zq/L))
    endif
 
    !**********  10-m neutral coeff relative to ut *********
-   Cdn_10=von*von/log(10/zo)/log(10/zo) 
-   Chn_10=von*von/log(10/zo)/log(10/zot) 
-   Cen_10=von*von/log(10/zo)/log(10/zoq) 
+   Cdn_10=von*von/log(10.0_R8/zo)/log(10.0_R8/zo)
+   Chn_10=von*von/log(10.0_R8/zo)/log(10.0_R8/zot)
+   Cen_10=von*von/log(10.0_R8/zo)/log(10.0_R8/zoq)
 
    !**********  reference-height values for u,q,T *********
    urf=us+(ua-us)*(log(zru/zo)-psiuo(zru/L))/(log(zu/zo)-psiuo(zu/L))
    vrf=vs+(va-vs)*(log(zru/zo)-psiuo(zru/L))/(log(zu/zo)-psiuo(zu/L))
    qrf=qs-dq*(log(zrq/zoq)-psit_30(zrq/L))/(log(zq/zoq)-psit_30(zq/L))
    trf=ts-dt*(log(zrt/zot)-psit_30(zrt/L))/(log(zt/zot)-psit_30(zt/L))
-   trf=trf+.0098*zrt
+   trf=trf+.0098_R8*zrt
 
 end subroutine cor30a
 
@@ -2519,7 +2519,7 @@ end subroutine cor30a
 !   22/11/2013: Thomas Toniazzo: comments added
 !
 ! !INTERFACE: ------------------------------------------------------------------
-real (SHR_KIND_R8) function psiuo(zet)
+real (R8) function psiuo(zet)
 ! !INPUT/OUTPUT PARAMETERS:
 real(R8),intent(in)  :: zet
 ! !EOP
@@ -2527,22 +2527,22 @@ real(R8) ::c,x,psik,psic,f
 !-----------------------------------------------------------------
 ! N.B.: z0/L always neglected compared to z/L and to 1
 !-----------------------------------------------------------------
-    if(zet>0)then 
+    if(zet>0.0_R8)then
 ! Beljaars & Holtslag (1991)
-     c=min(50.,.35*zet) 
-     psiuo=-((1+1.0*zet)**1.0+.667*(zet-14.28)/exp(c)+8.525)
-    else 
+     c=min(50._R8,.35_R8*zet)
+     psiuo=-((1.0_R8+1.0_R8*zet)**1.0_R8+.667_R8*(zet-14.28_R8)/exp(c)+8.525_R8)
+    else
 ! Dyer & Hicks (1974) for weak instability
-     x=(1.-15.*zet)**.25                   ! 15 instead of 16
-     psik=2.*log((1.+x)/2.)+log((1.+x*x)/2.)-2.*atan(x)+2.*atan(1.) 
+     x=(1.0_R8-15.0_R8*zet)**.25_R8                   ! 15 instead of 16
+     psik=2.0_R8*log((1.0_R8+x)/2.0_R8)+log((1.0_R8+x*x)/2.0_R8)-2.0_R8*atan(x)+2.0_R8*atan(1.0_R8)
 ! Fairall et al. (1996) for strong instability (Eq.(13))
-     x=(1.-10.15*zet)**.3333 
-     psic= 1.5*log((1.+x+x*x)/3.)-sqrt(3.)*atan((1.+2.*x)/sqrt(3.)) &
-         & +4.*atan(1.)/sqrt(3.) 
-     f=zet*zet/(1+zet*zet) 
-     psiuo=(1-f)*psik+f*psic                                                
-    endif 
-END FUNCTION psiuo 
+     x=(1.0_R8-10.15_R8*zet)**.3333_R8
+     psic= 1.5_R8*log((1.0_R8+x+x*x)/3.0_R8)-sqrt(3.0_R8)*atan((1.0_R8+2.0_R8*x)/sqrt(3.0_R8)) &
+         & +4.0_R8*atan(1.0_R8)/sqrt(3.0_R8)
+     f=zet*zet/(1.0_R8+zet*zet)
+     psiuo=(1.0_R8-f)*psik+f*psic
+    endif
+END FUNCTION psiuo
 
 
 
@@ -2560,7 +2560,7 @@ END FUNCTION psiuo
 !   22/11/2013: Thomas Toniazzo: comments added
 !
 ! !INTERFACE: ------------------------------------------------------------------
-real (SHR_KIND_R8) function psit_30(zet)
+real (R8) function psit_30(zet)
 ! !INPUT/OUTPUT PARAMETERS:
 real(R8),intent(in)  :: zet
 ! !EOP
@@ -2568,20 +2568,20 @@ real(R8) ::c,x,psik,psic,f
 !-----------------------------------------------------------------
 ! N.B.: z0/L always neglected compared to z/L and to 1
 !-----------------------------------------------------------------
-    if(zet>0)then 
+    if(zet>0.0_R8)then
 ! Beljaars & Holtslag (1991)
-     c=min(50.,.35*zet) 
-     psit_30=-((1.+2./3.*zet)**1.5+.667*(zet-14.28)/exp(c)+8.525)
-    else 
+     c=min(50._R8,.35_R8*zet)
+     psit_30=-((1.0_R8+2.0_R8/3.0_R8*zet)**1.5_R8+.667_R8*(zet-14.28_R8)/exp(c)+8.525_R8)
+    else
 ! Dyer & Hicks (1974) for weak instability
-     x=(1.-15.*zet)**.5                    ! 15 instead of 16
-     psik=2*log((1+x)/2) 
+     x=(1.0_R8-15.0_R8*zet)**.5_R8                    ! 15 instead of 16
+     psik=2.0_R8*log((1.0_R8+x)/2.0_R8)
 ! Fairall et al. (1996) for strong instability
-     x=(1.-(34.15*zet))**.3333 
-     psic= 1.5*log((1.+x+x*x)/3.)-sqrt(3.)*atan((1.+2.*x)/sqrt(3.)) &
-         & +4.*atan(1.)/sqrt(3.) 
-     f=zet*zet/(1+zet*zet) 
-     psit_30=(1-f)*psik+f*psic
+     x=(1.0_R8-(34.15_R8*zet))**.3333_R8
+     psic= 1.5_R8*log((1.0_R8+x+x*x)/3.0_R8)-sqrt(3.0_R8)*atan((1.0_R8+2.0_R8*x)/sqrt(3.0_R8)) &
+         & +4.0_R8*atan(1.0_R8)/sqrt(3.0_R8)
+     f=zet*zet/(1.0_R8+zet*zet)
+     psit_30=(1.0_R8-f)*psik+f*psic
    endif
 end FUNCTION psit_30
 

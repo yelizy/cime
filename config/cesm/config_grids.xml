@@ -197,6 +197,13 @@
       <mask>gx1v7</mask>
     </model_grid>
 
+    <model_grid alias="T5_T5_mg37" not_compset="_POP">
+      <grid name="atm">T5</grid>
+      <grid name="lnd">T5</grid>
+      <grid name="ocnice">T5</grid>
+      <mask>gx3v7</mask>
+    </model_grid>
+
     <model_grid alias="T85_T85_mg16" not_compset="_POP">
       <grid name="atm">T85</grid>
       <grid name="lnd">T85</grid>
@@ -954,6 +961,13 @@
       <mask>gx1v7</mask>
     </model_grid>
 
+    <model_grid alias="ne120pg3_ne120pg3_mt13" not_compset="_POP">
+      <grid name="atm">ne120np4.pg3</grid>
+      <grid name="lnd">ne120np4.pg3</grid>
+      <grid name="ocnice">ne120np4.pg3</grid>
+      <mask>tx0.1v3</mask>
+    </model_grid>
+
     <model_grid alias="ne240pg3_ne240pg3_mg17" not_compset="_POP|_CLM">
       <grid name="atm">ne240np4.pg3</grid>
       <grid name="lnd">ne240np4.pg3</grid>
@@ -966,6 +980,13 @@
       <grid name="lnd">ne120np4.pg3</grid>
       <grid name="ocnice">gx1v7</grid>
       <mask>gx1v7</mask>
+    </model_grid>
+
+    <model_grid alias="ne120pg3_t13">
+      <grid name="atm">ne120np4.pg3</grid>
+      <grid name="lnd">ne120np4.pg3</grid>
+      <grid name="ocnice">gx1v7</grid>
+      <mask>tx0.1v3</mask>
     </model_grid>
 
     <!--  spectral element grids with 4x4 FVM physics grid -->
@@ -1134,54 +1155,63 @@
     <domain name="CLM_USRDAT">
       <nx>1</nx> <ny>1</ny>
       <file>$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.${CLM_USRDAT_NAME}_navy.nc</file>
+      <mesh driver="nuopc">create_mesh</mesh>
       <desc>user specified domain - only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_numaIA">
       <nx>1</nx> <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-numaIA_navy.110106.nc</file>
+      <mesh driver="nuopc">create_mesh</mesh>
       <desc>1x1 Numa Iowa -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_brazil">
       <nx>1</nx> <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-brazil_navy.090715.nc</file>
+      <mesh driver="nuopc">create_mesh</mesh>
       <desc>1x1 Brazil -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_smallvilleIA">
       <nx>1</nx> <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-smallvilleIA_test.110106.nc</file>
+      <mesh driver="nuopc">create_mesh</mesh>
       <desc>1x1 Smallville Iowa Crop Test Case -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_camdenNJ">
       <nx>1</nx> <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-camdenNJ_navy.111004.nc</file>
+      <mesh driver="nuopc">create_mesh</mesh>
       <desc>1x1 Camden New Jersey -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_mexicocityMEX">
       <nx>1</nx> <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc</file>
+      <mesh driver="nuopc">create_mesh</mesh>
       <desc>1x1 Mexico City Mexico -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_vancouverCAN">
       <nx>1</nx> <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-vancouverCAN_navy.090715.nc</file>
+      <mesh driver="nuopc">create_mesh</mesh>
       <desc>1x1 Vancouver Canada -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_urbanc_alpha">
       <nx>1</nx> <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-urbanc_alpha_test.110201.nc</file>
+      <mesh driver="nuopc">create_mesh</mesh>
       <desc>1x1 Urban C Alpha Test Case -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="5x5_amazon">
       <nx>1</nx> <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.5x5pt-amazon_navy.090715.nc</file>
+      <mesh driver="nuopc">create_mesh</mesh>
       <desc>5x5 Amazon regional case -- only valid for DATM/CLM compset</desc>
     </domain>
 
@@ -1198,6 +1228,7 @@
     <domain name="360x720cru">
       <nx>720</nx> <ny>360</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.360x720_cruncep.100429.nc</file>
+      <mesh driver="nuopc">create_mesh</mesh>
       <desc>Exact half-degree CRUNCEP datm forcing grid with CRUNCEP land-mask -- only valid for DATM/CLM compset</desc>
     </domain>
 
@@ -1286,6 +1317,13 @@
       <file grid="atm|lnd" mask="gx1v6">domain.lnd.T341_gx1v6.111226.nc</file>
       <desc>T341 is Gaussian grid:</desc>
       <support>Backward compatible for very high resolution Spectral-dycore experiments</support>
+    </domain>
+
+    <domain name="T5">
+      <nx>16</nx> <ny>8</ny>
+      <file grid="atm|lnd" mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.lnd.T5_gx3v7.181009.nc</file>
+      <file grid="ocnice"  mask="gx3v7">$DIN_LOC_ROOT/share/domains/domain.ocn.T5_gx3v7.181009.nc</file>
+      <desc>T5 is Gaussian grid:</desc>
     </domain>
 
     <domain name="T85">
@@ -1455,6 +1493,8 @@
       <nx>777600</nx> <ny>1</ny>
       <file grid="atm|lnd" mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120np4.pg3_gx1v7.190718.nc</file>
       <file grid="ocnice"  mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120np4.pg3_gx1v7.190718.nc</file>
+      <file grid="atm|lnd" mask="tx0.1v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120np4.pg3_tx0.1v3.190820.nc</file>
+      <file grid="ocnice"  mask="tx0.1v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120np4.pg3_tx0.1v3.190820.nc</file>
       <desc>ne120np4.pg3 is a Spectral Elem 0.25-deg grid with a 3x3 FVM physics grid:</desc>
       <support>EXPERIMENTAL FVM physics grid</support>
     </domain>
@@ -1652,6 +1692,7 @@
 
     <domain name="gland4">
       <nx>416</nx> <ny>704</ny>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/greenland_4km_epsg3413_c170414_ESMFmesh_c20190729.nc</mesh>
       <desc>4-km Greenland grid, for use with the glissade dycore</desc>
     </domain>
 

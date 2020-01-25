@@ -696,8 +696,8 @@
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>TRUE implies always build model for openmp capability
-      If FALSE, component libraries are built with OpenMP capability only if
-      the NTHREADS_ setting for that component is greater than 1 in env_mach_pes.xml.
+      If FALSE, component libraries are built with OpenMP capability if
+      the NTHREADS_ setting for any component is greater than 1 in env_mach_pes.xml.
       If TRUE, the component libraries are always built with OpenMP capability.</desc>
   </entry>
 
@@ -1062,7 +1062,7 @@
 
   <entry id="GLC_GRID">
     <type>char</type>
-    <valid_values>gland20,gland10,gland5,gland5UM,gland4,mpas.gis20km,mpas.ais20km,null</valid_values>
+    <valid_values>gland20,gland10,gland5,gland5UM,gland4,mpas.aisgis20km,mpas.gis20km,mpas.ais20km,null</valid_values>
     <default_value>gland5UM</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>
@@ -2886,7 +2886,11 @@
    <default_value></default_value>
    <group>job_submission</group>
    <file>env_workflow.xml</file>
-   <desc>The machine wallclock setting.  Default determined in config_machines.xml can be overwritten by testing</desc>
+   <desc>The machine wallclock setting.  Default determined in
+   config_machines.xml can be overwritten by testing.  Format is
+   DD:HH:MM with DD assumed 0 if not present, this is translated to
+   the format specified by walltime format defined in
+   config_batch.xml</desc>
  </entry>
 
   <entry id="BATCH_COMMAND_FLAGS">
