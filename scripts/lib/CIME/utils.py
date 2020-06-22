@@ -273,14 +273,24 @@ def get_cime_default_driver():
     expect(driver in ("mct", "nuopc", "moab"),"Attempt to set invalid driver {}".format(driver))
     return driver
 
+def get_all_cime_models():
+    modelsroot = os.path.join(get_cime_root(), "config")
+    models = []
+    for entry in os.listdir(modelsroot):
+        if os.path.isdir(os.path.join(modelsroot,entry)):
+            models.append(entry)
+    models.remove('xml_schemas')
+    return models
+
 def set_model(model):
     """
     Set the model to be used in this session
     """
     cime_config = get_cime_config()
+    cime_models = get_all_cime_models()
     if not cime_config.has_section('main'):
         cime_config.add_section('main')
-    expect(model in ['cesm','e3sm','ufs'],"model {} not recognized".format(model))
+    expect(model in cime_models,"model {} not recognized. The acceptable values of CIME_MODEL currently are {}".format(model, cime_models))
     cime_config.set('main','CIME_MODEL',model)
 
 def get_model():
@@ -304,10 +314,11 @@ def get_model():
     >>> reset_cime_config()
     """
     model = os.environ.get("CIME_MODEL")
-    if model in ['cesm', 'e3sm', 'ufs']:
+    cime_models = get_all_cime_models()
+    if model in cime_models:
         logger.debug("Setting CIME_MODEL={} from environment".format(model))
     else:
-        expect(model is None,"model {} not recognized".format(model))
+        expect(model is None,"model {} not recognized. The acceptable values of CIME_MODEL currently are {}".format(model, cime_models))
         cime_config = get_cime_config()
         if (cime_config.has_option('main','CIME_MODEL')):
             model = cime_config.get('main','CIME_MODEL')
@@ -356,6 +367,19 @@ def _convert_to_fd(filearg, from_dir, mode="a"):
     return open(filearg, mode)
 
 _hack=object()
+
+def check_for_python(filepath, funcname=None):
+    is_python = is_python_executable(filepath)
+    has_function = True
+    if funcname is not None:
+        has_function = False
+        with open(filepath, 'r') as fd:
+            for line in fd.readlines():
+                if re.search(r"^def\s+{}\(".format(funcname), line) or re.search(r"^from.+import.+\s{}".format(funcname), line):
+                    has_function = True
+                    break
+
+    return is_python and has_function
 
 def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None,
                    from_dir=None, timeout=None):
@@ -866,7 +890,7 @@ def safe_copy(src_path, tgt_path, preserve_meta=True):
         if not os.access(tgt_path, os.W_OK):
             if owner_uid == os.getuid():
                 # I am the owner, make writeable
-                os.chmod(st.st_mode | statlib.S_IWRITE)
+                os.chmod(tgt_path, st.st_mode | statlib.S_IWRITE)
             else:
                 # I won't be able to copy this file
                 raise OSError("Cannot copy over file {}, it is readonly and you are not the owner".format(tgt_path))
@@ -1241,18 +1265,23 @@ def convert_to_seconds(time_str):
     """
     Convert time value in [[HH:]MM:]SS to seconds
 
+    We assume that XX:YY is likely to be HH:MM, not MM:SS
+
     >>> convert_to_seconds("42")
     42
     >>> convert_to_seconds("01:01:01")
     3661
+    >>> convert_to_seconds("01:01")
+    3660
     """
     components = time_str.split(":")
     expect(len(components) < 4, "Unusual time string: '{}'".format(time_str))
 
     components.reverse()
     result = 0
+    starting_exp = 1 if len(components) == 2 else 0
     for idx, component in enumerate(components):
-        result += int(component) * pow(60, idx)
+        result += int(component) * pow(60, idx + starting_exp)
 
     return result
 
@@ -1351,7 +1380,7 @@ def format_time(time_format, input_format, input_time):
     """
     input_fields = input_format.split("%")
     expect(input_fields[0] == input_time[:len(input_fields[0])],
-           "Failed to parse the input time; does not match the header string")
+           "Failed to parse the input time '{}'; does not match the header string '{}'".format(input_time, input_format))
     input_time = input_time[len(input_fields[0]):]
     timespec = {"H": None, "M": None, "S": None}
     maxvals = {"M": 60, "S": 60}

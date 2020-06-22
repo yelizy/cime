@@ -34,6 +34,9 @@ class SystemTestsCommon(object):
         self._init_locked_files(caseroot, expected)
         self._skip_pnl = False
         self._cpllog = "med" if self._case.get_value("COMP_INTERFACE")=="nuopc" else "cpl"
+        self._old_build = False
+        self._ninja     = False
+        self._dry_run   = False
 
     def _init_environment(self, caseroot):
         """
@@ -67,13 +70,16 @@ class SystemTestsCommon(object):
 
             self._case.case_setup(reset=True, test_mode=True)
 
-    def build(self, sharedlib_only=False, model_only=False):
+    def build(self, sharedlib_only=False, model_only=False, old_build=False, ninja=False, dry_run=False):
         """
         Do NOT override this method, this method is the framework that
         controls the build phase. build_phase is the extension point
         that subclasses should use.
         """
         success = True
+        self._old_build = old_build
+        self._ninja     = ninja
+        self._dry_run   = dry_run
         for phase_name, phase_bool in [(SHAREDLIB_BUILD_PHASE, not model_only),
                                        (MODEL_BUILD_PHASE, not sharedlib_only)]:
             if phase_bool:
@@ -121,7 +127,8 @@ class SystemTestsCommon(object):
         model = self._case.get_value('MODEL')
         build.case_build(self._caseroot, case=self._case,
                          sharedlib_only=sharedlib_only, model_only=model_only,
-                         save_build_provenance=not model=='cesm')
+                         save_build_provenance=not model=='cesm',
+                         use_old=self._old_build, ninja=self._ninja, dry_run=self._dry_run)
 
     def clean_build(self, comps=None):
         if comps is None:
@@ -141,12 +148,16 @@ class SystemTestsCommon(object):
             with self._test_status:
                 self._test_status.set_status(RUN_PHASE, TEST_PEND_STATUS)
 
-            self.run_phase()
+            if self._case.get_value("BATCH_SYSTEM") != "none":
+                resub_val = self._case.get_value("IS_FIRST_RUN")
+            else:
+                resub_val = True
 
-            if self._case.get_value("GENERATE_BASELINE"):
+            self.run_phase()
+            if self._case.get_value("GENERATE_BASELINE") and resub_val:
                 self._phase_modifying_call(GENERATE_PHASE, self._generate_baseline)
 
-            if self._case.get_value("COMPARE_BASELINE"):
+            if self._case.get_value("COMPARE_BASELINE") and resub_val:
                 self._phase_modifying_call(BASELINE_PHASE,   self._compare_baseline)
                 self._phase_modifying_call(MEMCOMP_PHASE,    self._compare_memory)
                 self._phase_modifying_call(THROUGHPUT_PHASE, self._compare_throughput)
@@ -184,7 +195,7 @@ class SystemTestsCommon(object):
                 overall_status = self._test_status.get_overall_test_status(ignore_namelists=True)
                 if overall_status != TEST_PASS_STATUS:
                     srcroot = self._case.get_value("CIMEROOT")
-                    worked_before, last_pass, last_fail = \
+                    worked_before, last_pass, last_fail_transition = \
                         get_test_success(baseline_root, srcroot, self._casebaseid)
 
                     if worked_before:
@@ -196,9 +207,9 @@ class SystemTestsCommon(object):
                             else:
                                 logger.warning("Unable to list potentially broken merges: {}\n{}".format(out, err))
                     else:
-                        if last_pass is not None and last_fail is not None:
-                            # commits between last_pass and last_fail broke things
-                            stat, out, err = run_cmd("git rev-list --first-parent {}..{}".format(last_pass, last_fail), from_dir=srcroot)
+                        if last_pass is not None and last_fail_transition is not None:
+                            # commits between last_pass and last_fail_transition broke things
+                            stat, out, err = run_cmd("git rev-list --first-parent {}..{}".format(last_pass, last_fail_transition), from_dir=srcroot)
                             if stat == 0:
                                 append_testlog("OLD FAIL: Potentially broken merges:\n{}".format(out), self._orig_caseroot)
                             else:
@@ -471,7 +482,7 @@ class SystemTestsCommon(object):
                     blmem = self._get_mem_usage(baselog)
                     blmem = 0 if blmem == [] else blmem[-1][1]
                     curmem = memlist[-1][1]
-                    diff = (curmem-blmem)/blmem
+                    diff = 0.0 if blmem == 0 else (curmem-blmem)/blmem
                     if diff < 0.1 and self._test_status.get_status(MEMCOMP_PHASE) is None:
                         self._test_status.set_status(MEMCOMP_PHASE, TEST_PASS_STATUS)
                     elif self._test_status.get_status(MEMCOMP_PHASE) != TEST_FAIL_STATUS:
@@ -619,6 +630,9 @@ fi
         self._set_script(script)
         FakeTest.build_phase(self,
                        sharedlib_only=sharedlib_only, model_only=model_only)
+
+class TESTRUNDIFFRESUBMIT(TESTRUNDIFF):
+    pass
 
 class TESTTESTDIFF(FakeTest):
 

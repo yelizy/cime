@@ -14,7 +14,7 @@ from CIME.provenance import save_test_success
 from CIME.case.case import Case
 
 SIGNAL_RECEIVED           = False
-E3SM_MAIN_CDASH           = "ACME_Climate"
+E3SM_MAIN_CDASH           = "E3SM"
 CDASH_DEFAULT_BUILD_GROUP = "ACME_Latest"
 SLEEP_INTERVAL_SEC        = .1
 
@@ -423,7 +423,6 @@ def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check
 
     expect(set(test_paths) == set(completed_test_paths),
            "Missing results for test paths: {}".format(set(test_paths) - set(completed_test_paths)))
-
     return test_results
 
 ###############################################################################

@@ -42,7 +42,7 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
                "CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
         # only checks for the first instance in a multidriver case
         if case.get_value("COMP_INTERFACE") == "nuopc":
-            rpointer = "rpointer.med"
+            rpointer = "rpointer.cpl"
         elif case.get_value("MULTI_DRIVER"):
             rpointer = "rpointer.drv_0001"
         else:
@@ -130,8 +130,8 @@ manual edits to these file will be lost!
         unlock_file(os.path.basename(env_batch.filename))
         lock_file(os.path.basename(env_batch.filename))
 
+        case.check_case()
         if job == case.get_primary_job():
-            case.check_case()
             case.check_DA_settings()
             if case.get_value("MACH") == "mira":
                 with open(".original_host", "w") as fd:
@@ -219,7 +219,7 @@ def check_case(self):
     self.check_all_input_data()
 
     if self.get_value('COMP_WAV') == 'ww':
-        # the ww3 buildnml has dependancies on inputdata so we must run it again
+        # the ww3 buildnml has dependencies on inputdata so we must run it again
         self.create_namelists(component='WAV')
 
     expect(self.get_value("BUILD_COMPLETE"), "Build complete is "

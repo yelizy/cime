@@ -106,12 +106,6 @@ ifeq ($(USE_ESMF_LIB), TRUE)
    CPPDEFS += -DUSE_ESMF_LIB
 endif
 
-ifeq ($(COMP_INTERFACE), nuopc)
-   CPPDEFS += -DNUOPC_INTERFACE
-else
-   CPPDEFS += -DMCT_INTERFACE
-endif
-
 ifeq ($(COMPARE_TO_NUOPC), TRUE)
    CPPDEFS += -DCOMPARE_TO_NUOPC
 endif
@@ -122,15 +116,28 @@ else
   CPPDEFS += -DHAVE_MPI
 endif
 
-ifeq ($(strip $(PIO_VERSION)),1)
-  CPPDEFS += -DPIO1
-else
-  USE_CXX = TRUE
-endif
-
 ifeq (,$(SHAREDPATH))
   SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)/$(COMP_INTERFACE)
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
+endif
+
+ifeq ($(COMP_INTERFACE), nuopc)
+   CPPDEFS += -DNUOPC_INTERFACE
+   ifneq ($(realpath $(INSTALL_SHAREDPATH)/lib/libstreams.a),)
+     FoX_LIBS := $(shell $(INSTALL_SHAREDPATH)/bin/FoX-config --libs)
+     SLIBS += -ldshr -lstreams $(FoX_LIBS)
+   endif
+else
+   CPPDEFS += -DMCT_INTERFACE
+endif
+
+ifeq ($(PIO_VERSION),2)
+  ifeq ($(CIME_MODEL),e3sm)
+    # Needed by SCORPIO not default PIO, does not work with NAG compiler
+    USE_CXX := TRUE
+  endif
+else
+  CPPDEFS += -DPIO1
 endif
 
 ifeq ($(USE_CXX), TRUE)
@@ -298,20 +305,12 @@ ifeq ($(findstring -DLINUX,$(CPPDEFS)),-DLINUX)
   endif
 endif
 
-# Atleast on Titan+cray mpi, MPI_Irsends() are buggy, causing hangs during I/O
-# Force PIO to use MPI_Isends instead of the default, MPI_Irsends
-ifeq ($(PIO_VERSION),2)
-  EXTRA_PIO_CPPDEFS = -DUSE_MPI_ISEND_FOR_FC
-else
-  EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
-endif
-
 ifdef LIB_PNETCDF
    CPPDEFS += -D_PNETCDF
    SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
 endif
 
-# Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
+# Set esmf.mk location with ESMF_LIBDIR having precedence over ESMFMKFILE
 CIME_ESMFMKFILE := undefined_ESMFMKFILE
 ifdef ESMFMKFILE
    CIME_ESMFMKFILE := $(ESMFMKFILE)
@@ -343,6 +342,7 @@ GLC_PRESENT ?= TRUE
 WAV_PRESENT ?= TRUE
 ESP_PRESENT ?= TRUE
 IAC_PRESENT ?= TRUE
+MED_PRESENT ?= TRUE
 ifeq ($(ULIBDEP),$(null))
   ifneq ($(LIBROOT),$(null))
     ifeq ($(ATM_PRESENT),TRUE)
@@ -380,6 +380,9 @@ ifeq ($(ULIBDEP),$(null))
     ifeq ($(IAC_PRESENT),TRUE)
       ULIBDEP += $(LIBROOT)/libiac.a
     endif
+    ifeq ($(MED_PRESENT),TRUE)
+      CPPDEFS += -DMED_PRESENT
+    endif
   endif
 endif
 
@@ -409,7 +412,6 @@ endif
 #===============================================================================
 # User-specified INCLDIR
 #===============================================================================
-
 INCLDIR := -I.
 ifdef USER_INCLDIR
   INCLDIR += $(USER_INCLDIR)
@@ -457,7 +459,7 @@ VPATH+=$(CSM_SHR_INCLUDE)
 #===============================================================================
 # Set include paths (needed after override for any model specific builds below)
 #===============================================================================
-INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
+INCLDIR += -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include -I$(INSTALL_SHAREDPATH)/finclude
 
 ifeq ($(NETCDF_SEPARATE), FALSE)
   INCLDIR += -I$(INC_NETCDF)
@@ -555,6 +557,10 @@ CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
                 LDFLAGS="$(LDFLAGS)"
 
+ifeq ($(MODEL), fox)
+  CONFIG_ARGS += --prefix="$(INSTALL_SHAREDPATH)"
+endif
+
 ifeq ($(NETCDF_SEPARATE), FALSE)
   CONFIG_ARGS += NETCDF_PATH=$(NETCDF_PATH)
 else ifeq ($(NETCDF_SEPARATE), TRUE)
@@ -572,6 +578,16 @@ ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
     INCLDIR+=-I$(COSP_LIBDIR)
   endif
 endif
+
+COMP_ATM ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMP_ATM --value)
+ifeq ($(strip $(COMP_ATM)),cam)
+  CAM_DYCORE ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_DYCORE --value)
+  ifeq ($(CAM_DYCORE),fv3)
+    FV3CORE_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/atmos_cubed_sphere)
+    INCLDIR+=-I$(FV3CORE_LIBDIR) -I$(FV3CORE_LIBDIR)/../ -I../$(INSTALL_SHAREDPATH)/include -I../$(CSM_SHR_INCLUDE) -I$(abspath $(EXEROOT)/FMS) -I$(CIMEROOT)/../libraries/FMS/src/include
+  endif
+endif
+
 
 ifeq ($(MODEL),cam)
   # These RRTMG files take an extraordinarily long time to compile with optimization.
@@ -594,6 +610,12 @@ $(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
 cospsimulator_intr.o: $(COSP_LIBDIR)/libcosp.a
 endif
 
+ifdef FV3CORE_LIBDIR
+$(FV3CORE_LIBDIR)/libfv3core.a: $(EXEROOT)/FMS/libfms.a
+	$(MAKE) -C $(FV3CORE_LIBDIR) complib COMPLIB='$(FV3CORE_LIBDIR)/libfv3core.a' F90='$(FC)' CC='$(CC)' FFLAGS='$(FFLAGS) $(FC_AUTO_R8)'  CFLAGS='$(CFLAGS)' INCLDIR='$(INCLDIR)' FC_TYPE='$(COMPILER)'
+
+dyn_grid.o: $(FV3CORE_LIBDIR)/libfv3core.a
+endif
 endif
 
 
@@ -662,6 +684,10 @@ endif
 #------------------------------------------------------------------------------
 # Drive configure scripts for support libraries (mct)
 #------------------------------------------------------------------------------
+
+$(SHAREDLIBROOT)/$(SHAREDPATH)/fox/arch.make:
+	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
+	$(CONFIG_SHELL) $(CIMEROOT)/src/externals/fox/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/src/externals/fox
 
 $(SHAREDLIBROOT)/$(SHAREDPATH)/mct/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
@@ -896,6 +922,10 @@ ifdef COSP_LIBDIR
   endif
 endif
 
+ifdef FV3CORE_LIBDIR
+  ULIBDEP += $(FV3CORE_LIBDIR)/libfv3core.a
+  ULIBDEP += $(EXEROOT)/FMS/libfms.a
+endif
 
 ifndef CLIBS
    ifdef ULIBDEP
@@ -942,7 +972,23 @@ install_lib: $(COMPLIB)
 	$(CP) -p $(COMPLIB) $(CSMSHARELIB)
 	$(CP) -p *.$(MOD_SUFFIX) *.h $(INCLUDE_DIR)
 
+# This rule writes the include flags and the link flags used in the $(EXEC_SE) rule below
+# It expects the variable OUTPUT_FILE to be defined
+# Set MODEL=driver to get the same flags as are used when building the driver
+.PHONY: write_include_and_link_flags
+write_include_and_link_flags:
+	@$(RM) -f $(OUTPUT_FILE)
+	@echo CIME_CSM_SHR_INCLUDE = $(CSM_SHR_INCLUDE) >> $(OUTPUT_FILE)
+	@echo CIME_ESMF_F90COMPILEPATHS = $(ESMF_F90COMPILEPATHS) >> $(OUTPUT_FILE)
+	@echo CIME_INCLDIR = $(INCLDIR) >> $(OUTPUT_FILE)
+	@echo CIME_INCS = $(INCS) >> $(OUTPUT_FILE)
+	@echo CIME_CLIBS = $(CLIBS) >> $(OUTPUT_FILE)
+	@echo CIME_ULIBS = $(ULIBS) >> $(OUTPUT_FILE)
+	@echo CIME_SLIBS = $(SLIBS) >> $(OUTPUT_FILE)
+	@echo CIME_MLIBS = $(MLIBS) >> $(OUTPUT_FILE)
+	@echo CIME_F90_LDFLAGS = $(F90_LDFLAGS) >> $(OUTPUT_FILE)
 
+# If variables are added to this rule, similar changes should be made in the write_link_flags rule above
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(F90_LDFLAGS)
 

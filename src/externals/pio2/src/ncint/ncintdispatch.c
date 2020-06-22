@@ -7,9 +7,9 @@
 
 #include "config.h"
 #include <stdlib.h>
-#include "ncintdispatch.h"
 #include "pio.h"
 #include "pio_internal.h"
+#include "ncintdispatch.h"
 
 /* Prototypes from nc4internal.h. */
 int nc4_file_list_add(int ncid, const char *path, int mode,
@@ -24,11 +24,15 @@ int diosysid;
 /** Did we initialize user-defined format? */
 int ncint_initialized = 0;
 
+/** Version of dispatch table. */
+#define DISPATCH_VERSION 2
+
 /* This is the dispatch object that holds pointers to all the
  * functions that make up the NCINT dispatch interface. */
 NC_Dispatch NCINT_dispatcher = {
 
     NC_FORMATX_UDF0,
+    DISPATCH_VERSION,
 
     PIO_NCINT_create,
     PIO_NCINT_open,
@@ -39,8 +43,6 @@ NC_Dispatch NCINT_dispatcher = {
     PIO_NCINT_abort,
     PIO_NCINT_close,
     PIO_NCINT_set_fill,
-    NC_NOTNC3_inq_base_pe,
-    NC_NOTNC3_set_base_pe,
     PIO_NCINT_inq_format,
     PIO_NCINT_inq_format_extended,
 
@@ -113,7 +115,8 @@ NC_Dispatch NCINT_dispatcher = {
     NC_NOTNC4_def_var_endian,
     NC_NOTNC4_def_var_filter,
     NC_NOTNC4_set_var_chunk_cache,
-    NC_NOTNC4_get_var_chunk_cache
+    NC_NOTNC4_get_var_chunk_cache,
+    NC_NOTNC4_filter_actions
 };
 
 /**
@@ -133,14 +136,17 @@ PIO_NCINT_initialize(void)
 {
     int ret;
 
-    NCINT_dispatch_table = &NCINT_dispatcher;
+    if (!ncint_initialized)
+    {
+        NCINT_dispatch_table = &NCINT_dispatcher;
 
-    PLOG((1, "Adding user-defined format for netCDF PIO integration"));
+        PLOG((1, "Adding user-defined format for netCDF PIO integration"));
 
-    /* Add our user defined format. */
-    if ((ret = nc_def_user_format(NC_UDF0, &NCINT_dispatcher, NULL)))
-        return ret;
-    ncint_initialized++;
+        /* Add our user defined format. */
+        if ((ret = nc_def_user_format(NC_UDF0, &NCINT_dispatcher, NULL)))
+            return ret;
+        ncint_initialized++;
+    }
 
     return NC_NOERR;
 }
