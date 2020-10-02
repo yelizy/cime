@@ -109,6 +109,126 @@
       <grid name="rof">null</grid>
     </model_grid>
 
+    <model_grid alias="1x1_ALP1" compset="DATM.+CLM">
+      <grid name="atm">1x1_ALP1</grid>
+      <grid name="lnd">1x1_ALP1</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_ALP2" compset="DATM.+CLM">
+      <grid name="atm">1x1_ALP2</grid>
+      <grid name="lnd">1x1_ALP2</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_ALP3" compset="DATM.+CLM">
+      <grid name="atm">1x1_ALP3</grid>
+      <grid name="lnd">1x1_ALP3</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_ALP4" compset="DATM.+CLM">
+      <grid name="atm">1x1_ALP4</grid>
+      <grid name="lnd">1x1_ALP4</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_SUB1" compset="DATM.+CLM">
+      <grid name="atm">1x1_SUB1</grid>
+      <grid name="lnd">1x1_SUB1</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_SUB2" compset="DATM.+CLM">
+      <grid name="atm">1x1_SUB2</grid>
+      <grid name="lnd">1x1_SUB2</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_SUB3" compset="DATM.+CLM">
+      <grid name="atm">1x1_SUB3</grid>
+      <grid name="lnd">1x1_SUB3</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_SUB4" compset="DATM.+CLM">
+      <grid name="atm">1x1_SUB4</grid>
+      <grid name="lnd">1x1_SUB4</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_BOR1" compset="DATM.+CLM">
+      <grid name="atm">1x1_BOR1</grid>
+      <grid name="lnd">1x1_BOR1</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_BOR2" compset="DATM.+CLM">
+      <grid name="atm">1x1_BOR2</grid>
+      <grid name="lnd">1x1_BOR2</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_BOR3" compset="DATM.+CLM">
+      <grid name="atm">1x1_BOR3</grid>
+      <grid name="lnd">1x1_BOR3</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_BOR4" compset="DATM.+CLM">
+      <grid name="atm">1x1_BOR4</grid>
+      <grid name="lnd">1x1_BOR4</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_LYG" compset="DATM.+CLM">
+      <grid name="atm">1x1_LYG</grid>
+      <grid name="lnd">1x1_LYG</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_BUO" compset="DATM.+CLM">
+      <grid name="atm">1x1_BUO</grid>
+      <grid name="lnd">1x1_BUO</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_HAV" compset="DATM.+CLM">
+      <grid name="atm">1x1_HAV</grid>
+      <grid name="lnd">1x1_HAV</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_SKO" compset="DATM.+CLM">
+      <grid name="atm">1x1_SKO</grid>
+      <grid name="lnd">1x1_SKO</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_VIKE" compset="DATM.+CLM">
+      <grid name="atm">1x1_VIKE</grid>
+      <grid name="lnd">1x1_VIKE</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_JOAS" compset="DATM.+CLM">
+      <grid name="atm">1x1_JOAS</grid>
+      <grid name="lnd">1x1_JOAS</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_LIAH" compset="DATM.+CLM">
+      <grid name="atm">1x1_LIAH</grid>
+      <grid name="lnd">1x1_LIAH</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="1x1_FINN" compset="DATM.+CLM">
+      <grid name="atm">1x1_FINN</grid>
+      <grid name="lnd">1x1_FINN</grid>
+      <grid name="rof">null</grid>
+    </model_grid>
+
     <model_grid alias="1x1_urbanc_alpha" compset="DATM.+CLM">
       <grid name="atm">1x1_urbanc_alpha</grid>
       <grid name="lnd">1x1_urbanc_alpha</grid>
@@ -1278,6 +1398,126 @@
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-vancouverCAN_navy.090715.nc</file>
       <mesh driver="nuopc">create_mesh</mesh>
       <desc>1x1 Vancouver Canada -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_ALP1">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/ALP1/domain.lnd.ALP1.200422.nc</file>
+      <desc>1x1 SeedClim ALP1 site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_ALP2">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/ALP2/domain.lnd.ALP2.200422.nc</file>
+      <desc>1x1 SeedClim ALP2 site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_ALP3">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/ALP3/domain.lnd.ALP3.200422.nc</file>
+      <desc>1x1 SeedClim ALP3 site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_ALP4">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/ALP4/domain.lnd.ALP4.200422.nc</file>
+      <desc>1x1 SeedClim ALP4 site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_SUB1">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/SUB1/domain.lnd.SUB1.200422.nc</file>
+      <desc>1x1 SeedClim SUB1 site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_SUB2">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/SUB2/domain.lnd.SUB2.200422.nc</file>
+      <desc>1x1 SeedClim SUB2 site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_SUB3">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/SUB3/domain.lnd.SUB3.200422.nc</file>
+      <desc>1x1 SeedClim SUB3 site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_SUB4">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/SUB4/domain.lnd.SUB4.200422.nc</file>
+      <desc>1x1 SeedClim SUB4 site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_BOR1">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/BOR1/domain.lnd.BOR1.200422.nc</file>
+      <desc>1x1 SeedClim BOR1 site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_BOR2">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/BOR2/domain.lnd.BOR2.200422.nc</file>
+      <desc>1x1 SeedClim BOR2 site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_BOR3">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/BOR3/domain.lnd.BOR3.200422.nc</file>
+      <desc>1x1 SeedClim BOR3 site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_BOR4">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/BOR4/domain.lnd.BOR4.200422.nc</file>
+      <desc>1x1 SeedClim BOR4 site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_LYG">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/LYG/domain.lnd.LYG.200927.nc</file>
+      <desc>1x1 Landpress LYG1-3 site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_BUO">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/BUO/domain.lnd.BUO.200927.nc</file>
+      <desc>1x1 Landpress BUO site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_HAV">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/HAV/domain.lnd.HAV.200927.nc</file>
+      <desc>1x1 Landpress HAV site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_SKO">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/SKO/domain.lnd.SKO.200927.nc</file>
+      <desc>1x1 Landpress SKO site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_VIKE">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/VIKE/domain.lnd.VIKE.200927.nc</file>
+      <desc>1x1 Three-D VIKE site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_JOAS">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/JOAS/domain.lnd.JOAS.200927.nc</file>
+      <desc>1x1 Three-D JOAS site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_LIAH">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/LIAH/domain.lnd.LIAH.200927.nc</file>
+      <desc>1x1 Three-D LIAH site -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="1x1_FINN">
+      <nx>1</nx> <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/FINN/domain.lnd.FINN.200927.nc</file>
+      <desc>1x1 Finnmark site -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_urbanc_alpha">

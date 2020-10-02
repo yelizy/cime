@@ -190,7 +190,7 @@
     <values>
       <value datm_mode="CLM_QIAN$">CLM_QIAN.Solar,CLM_QIAN.Precip,CLM_QIAN.TPQW</value>
       <value datm_mode="CLM_QIAN_WISO">CLM_QIAN_WISO.Solar,CLM_QIAN_WISO.Precip,CLM_QIAN_WISO.TPQW</value>
-      <value datm_mode="CLM1PT">CLM1PT.$ATM_GRID</value>
+      <value datm_mode="CLM1PT">CLM1PT.$ATM_GRID.Solar,CLM1PT.$ATM_GRID.Precip,CLM1PT.$ATM_GRID.TPQW </value>
       <value datm_mode="CLMCRUNCEP$">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
       <value datm_mode="CLMCRUNCEPv7">CLMCRUNCEPv7.Solar,CLMCRUNCEPv7.Precip,CLMCRUNCEPv7.TPQW</value>
       <value datm_mode="CLMGSWP3v1">CLMGSWP3v1.Solar,CLMGSWP3v1.Precip,CLMGSWP3v1.TPQW</value>
@@ -211,7 +211,7 @@
     <desc>Stream domain file directory.</desc>
     <values>
       <value>null</value>
-      <value stream="CLM1PT.1x1">$DIN_LOC_ROOT/atm/datm7/domain.clm</value>
+      <value stream="CLM1PT.1x1">$ATM_DOMAIN_PATH</value>
       <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_PATH</value>
       <value stream="CPLHISTForcing">null</value>
       <value stream="CLM_QIAN">$DIN_LOC_ROOT/atm/datm7</value>
@@ -272,6 +272,7 @@
       <value stream="CLM1PT.1x1_mexicocityMEX">domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc</value>
       <value stream="CLM1PT.1x1_vancouverCAN">domain.lnd.1x1pt-vancouverCAN_navy.090715.nc </value>
       <value stream="CLM1PT.1x1_urbanc_alpha">domain.lnd.1x1pt-urbanc_alpha_navy.090715.nc </value>
+      <value stream="CLM1PT.1x1">$ATM_DOMAIN_FILE</value>
       <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_FILE</value>
       <value stream="CPLHISTForcing">null</value>
       <value stream="CLM_QIAN\.">domain.T62.050609.nc</value>
@@ -348,11 +349,53 @@
       <value stream="presaero.clim_2010" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
       <value stream="presaero.trans_1850-2000" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
 
+      <value stream="presaero.clim_1850">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
+      <value stream="presaero.clim_2000">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_ALP1">ALP1/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_ALP1.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_ALP2">ALP2/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_ALP2.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_ALP3">ALP3/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_ALP3.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_ALP4">ALP4/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_ALP4.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_SUB1">SUB1/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_SUB1.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_SUB2">SUB2/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_SUB2.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_SUB3">SUB3/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_SUB3.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_SUB4">SUB4/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_SUB4.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_BOR1">BOR1/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_BOR1.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_BOR2">BOR2/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_BOR2.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_BOR3">BOR3/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_BOR3.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_BOR4">BOR4/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_BOR4.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_LYG">LYG/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_LYG.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_BUO">BUO/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_BUO.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_HAV">HAV/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_HAV.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_SKO">SKO/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_SKO.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_VIKE">VIKE/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_VIKE.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_JOAS">JOAS/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_JOAS.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_LIAH">LIAH/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_LIAH.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_FINN">FINN/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_FINN.nc</value>
       <value stream="presaero.SSP2-4.5">aerodep_clm_SSP245_b.e21.BWSSP245cmip6.f09_g17.CMIP6-SSP2-4.5-WACCM.001_2014-2101_monthly_0.9x1.25_c190401.nc</value>
       <value stream="presaero.SSP3-7.0">aerodep_clm_SSP370_b.e21.BWSSP370cmip6.f09_g17.CMIP6-SSP3-7.0-WACCM.001_2014-2101_monthly_0.9x1.25_c190402.nc</value>
       <value stream="presaero.SSP5-3.4">null</value>
       <value stream="presaero.SSP5-8.5">aerodep_clm_SSP585_b.e21.BSSP585cmip6.f09_g17.CMIP6-SSP5-8.5.001_2014-2101_monthly_0.9x1.25_c190419.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_ALP1">ALP1/topodata_ALP1.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_ALP2">ALP2/topodata_ALP2.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_ALP3">ALP3/topodata_ALP3.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_ALP4">ALP4/topodata_ALP4.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_SUB1">SUB1/topodata_SUB1.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_SUB2">SUB2/topodata_SUB2.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_SUB3">SUB3/topodata_SUB3.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_SUB4">SUB4/topodata_SUB4.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_BOR1">BOR1/topodata_BOR1.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_BOR2">BOR2/topodata_BOR2.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_BOR3">BOR3/topodata_BOR3.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_BOR4">BOR4/topodata_BOR4.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_LYG">LYG/topodata_LYG.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_BUO">BUO/topodata_BUO.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_HAV">HAV/topodata_HAV.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_SKO">SKO/topodata_SKO.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_VIKE">VIKE/topodata_VIKE.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_JOAS">JOAS/topodata_JOAS.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_LIAH">LIAH/topodata_LIAH.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_FINN">FINN/topodata_FINN.nc</value>
       <value stream="topo.cplhist">null</value>
     </values>
   </entry>
@@ -418,7 +461,27 @@
       <value stream="CLM1PT.1x1_mexicocityMEX">$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/mexicocityMEX.c080124</value>
       <value stream="CLM1PT.1x1_vancouverCAN">$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/vancouverCAN.c080124 </value>
       <value stream="CLM1PT.1x1_urbanc_alpha">$DIN_LOC_ROOT/atm/datm7/CLM1PT_data/urbanc_alpha.c080416 </value>
-      <value stream="CLM1PT.CLM_USRDAT">$DIN_LOC_ROOT_CLMFORC/$CLM_USRDAT_NAME/CLM1PT_data</value>
+      <value stream="CLM1PT.1x1_ALP1">$DIN_LOC_ROOT_CLMFORC/ALP1</value>
+      <value stream="CLM1PT.1x1_ALP2">$DIN_LOC_ROOT_CLMFORC/ALP2</value>
+      <value stream="CLM1PT.1x1_ALP3">$DIN_LOC_ROOT_CLMFORC/ALP3</value>
+      <value stream="CLM1PT.1x1_ALP4">$DIN_LOC_ROOT_CLMFORC/ALP4</value>
+      <value stream="CLM1PT.1x1_SUB1">$DIN_LOC_ROOT_CLMFORC/SUB1</value>
+      <value stream="CLM1PT.1x1_SUB2">$DIN_LOC_ROOT_CLMFORC/SUB2</value>
+      <value stream="CLM1PT.1x1_SUB3">$DIN_LOC_ROOT_CLMFORC/SUB3</value>
+      <value stream="CLM1PT.1x1_SUB4">$DIN_LOC_ROOT_CLMFORC/SUB4</value>
+      <value stream="CLM1PT.1x1_BOR1">$DIN_LOC_ROOT_CLMFORC/BOR1</value>
+      <value stream="CLM1PT.1x1_BOR2">$DIN_LOC_ROOT_CLMFORC/BOR2</value>
+      <value stream="CLM1PT.1x1_BOR3">$DIN_LOC_ROOT_CLMFORC/BOR3</value>
+      <value stream="CLM1PT.1x1_BOR4">$DIN_LOC_ROOT_CLMFORC/BOR4</value>
+      <value stream="CLM1PT.1x1_LYG">$DIN_LOC_ROOT_CLMFORC/LYG</value>
+      <value stream="CLM1PT.1x1_BUO">$DIN_LOC_ROOT_CLMFORC/BUO</value>
+      <value stream="CLM1PT.1x1_HAV">$DIN_LOC_ROOT_CLMFORC/HAV</value>
+      <value stream="CLM1PT.1x1_SKO">$DIN_LOC_ROOT_CLMFORC/SKO</value>
+      <value stream="CLM1PT.1x1_VIKE">$DIN_LOC_ROOT_CLMFORC/VIKE</value>
+      <value stream="CLM1PT.1x1_JOAS">$DIN_LOC_ROOT_CLMFORC/JOAS</value>
+      <value stream="CLM1PT.1x1_LIAH">$DIN_LOC_ROOT_CLMFORC/LIAH</value>
+      <value stream="CLM1PT.1x1_FINN">$DIN_LOC_ROOT_CLMFORC/FINN</value>
+      <value stream="CLM1PT.CLM_USRDAT">$DIN_LOC_ROOT_CLMFORC/$CLM_USRDAT_NAME</value>
       <value stream="CPLHISTForcing">$DATM_CPLHIST_DIR</value>
       <value stream="CLM_QIAN.Solar">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/Solar6Hrly</value>
       <value stream="CLM_QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/Precip6Hrly</value>
@@ -488,7 +551,27 @@
         clm1pt-0002-10.nc
         clm1pt-0002-11.nc
       </value>
-      <value  stream="CLM1PT.CLM_USRDAT">%ym.nc</value>
+      <value  stream="CLM1PT.1x1_ALP1">clm1pt_ALP1_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_ALP2">clm1pt_ALP2_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_ALP3">clm1pt_ALP3_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_ALP4">clm1pt_ALP4_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_SUB1">clm1pt_SUB1_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_SUB2">clm1pt_SUB2_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_SUB3">clm1pt_SUB3_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_SUB4">clm1pt_SUB4_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_BOR1">clm1pt_BOR1_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_BOR2">clm1pt_BOR2_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_BOR3">clm1pt_BOR3_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_BOR4">clm1pt_BOR4_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_LYG">clm1pt_LYG_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_BUO">clm1pt_BUO_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_HAV">clm1pt_HAV_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_SKO">clm1pt_SKO_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_VIKE">clm1pt_VIKE_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_JOAS">clm1pt_JOAS_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_LIAH">clm1pt_LIAH_%ym.nc</value>
+      <value  stream="CLM1PT.1x1_FINN">clm1pt_FINN_%ym.nc</value>
+      <value  stream="CLM1PT.CLM_USRDAT">clm1pt_${CLM_USRDAT_NAME}_%ym.nc</value>
       <value  stream="CPLHISTForcing.Solar">$DATM_CPLHIST_CASE.cpl.ha2x1hi.%ym.nc</value>
       <value  stream="CPLHISTForcing.nonSolarFlux">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
       <value  stream="CPLHISTForcing.State3hr">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
@@ -2203,6 +2286,26 @@
 
       <value stream="presaero.clim_1850">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
       <value stream="presaero.clim_2000">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_ALP1">ALP1/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_ALP1.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_ALP2">ALP2/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_ALP2.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_ALP3">ALP3/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_ALP3.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_ALP4">ALP4/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_ALP4.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_SUB1">SUB1/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_SUB1.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_SUB2">SUB2/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_SUB2.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_SUB3">SUB3/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_SUB3.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_SUB4">SUB4/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_SUB4.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_BOR1">BOR1/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_BOR1.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_BOR2">BOR2/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_BOR2.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_BOR3">BOR3/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_BOR3.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_BOR4">BOR4/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_BOR4.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_LYG">LYG/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_LYG.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_BUO">BUO/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_BUO.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_HAV">HAV/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_HAV.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_SKO">SKO/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_SKO.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_VIKE">VIKE/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_VIKE.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_JOAS">JOAS/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_JOAS.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_LIAH">LIAH/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_LIAH.nc</value>
+      <value stream="presaero.clim_2000" atm_grid="1x1_FINN">FINN/aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926_FINN.nc</value>        
       <value stream="presaero.clim_2010">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
       <value stream="presaero.trans_1850-2000">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
 
@@ -2221,6 +2324,26 @@
       <value stream="presaero.SSP5-3.4">null</value>
       <value stream="presaero.SSP5-8.5">aerodep_clm_SSP585_b.e21.BSSP585cmip6.f09_g17.CMIP6-SSP5-8.5.001_2014-2101_monthly_0.9x1.25_c190419.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_ALP1">ALP1/topodata_ALP1.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_ALP2">ALP2/topodata_ALP2.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_ALP3">ALP3/topodata_ALP3.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_ALP4">ALP4/topodata_ALP4.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_SUB1">SUB1/topodata_SUB1.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_SUB2">SUB2/topodata_SUB2.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_SUB3">SUB3/topodata_SUB3.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_SUB4">SUB4/topodata_SUB4.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_BOR1">BOR1/topodata_BOR1.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_BOR2">BOR2/topodata_BOR2.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_BOR3">BOR3/topodata_BOR3.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_BOR4">BOR4/topodata_BOR4.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_LYG">LYG/topodata_LYG.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_BUO">BUO/topodata_BUO.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_HAV">HAV/topodata_HAV.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_SKO">SKO/topodata_SKO.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_VIKE">VIKE/topodata_VIKE.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_JOAS">JOAS/topodata_JOAS.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_LIAH">LIAH/topodata_LIAH.nc</value>
+      <value stream="topo.observed" atm_grid="1x1_FINN">FINN/topodata_FINN.nc</value>
     </values>
   </entry>
 
@@ -2267,16 +2390,302 @@
         PSRF     pbot
         FLDS     lwdn
       </value>
-      <value  stream="CLM1PT.CLM_USRDAT">
-        ZBOT     z
-        TBOT     tbot
-        RH       rh
-        WIND     wind
+
+      <value  stream="CLM1PT.CLM_USRDAT.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.CLM_USRDAT.Precip">
         PRECTmms precn
-        FSDS     swdn
+      </value>
+      <value  stream="CLM1PT.CLM_USRDAT.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
         PSRF     pbot
         FLDS     lwdn
       </value>
+
+      <value  stream="CLM1PT.1x1_ALP1.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_ALP1.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_ALP1.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_ALP2.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_ALP2.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_ALP2.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_ALP3.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_ALP3.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_ALP3.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_ALP4.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_ALP4.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_ALP4.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_SUB1.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_SUB1.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_SUB1.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_SUB2.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_SUB2.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_SUB2.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_SUB3.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_SUB3.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_SUB3.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_SUB4.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_SUB4.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_SUB4.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_BOR1.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_BOR1.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_BOR1.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_BOR2.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_BOR2.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_BOR2.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_BOR3.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_BOR3.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_BOR3.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_BOR4.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_BOR4.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_BOR4.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_LYG.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_LYG.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_LYG.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_BUO.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_BUO.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_BUO.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_HAV.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_HAV.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_HAV.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_SKO.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_SKO.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_SKO.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_VIKE.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_VIKE.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_VIKE.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_JOAS.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_JOAS.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_JOAS.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_LIAH.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_LIAH.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_LIAH.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+      <value  stream="CLM1PT.1x1_FINN.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="CLM1PT.1x1_FINN.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="CLM1PT.1x1_FINN.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+
+
       <value stream="CPLHISTForcing.Solar">
         a2x1hi_Faxa_swndr swndr
         a2x1hi_Faxa_swvdr swvdr
@@ -2616,6 +3025,7 @@
       <value stream="CLM1PT.1x1_vancouverCAN">1992</value>
       <value stream="CLM1PT.1x1_urbanc_alpha">0001</value>
       <value stream="CLM1PT.CLM_USRDAT">$DATM_CLMNCEP_YR_START</value>
+      <value stream="CLM1PT.1x1">$DATM_CLMNCEP_YR_START</value>
       <value stream="CPLHISTForcing">$DATM_CPLHIST_YR_START</value>
       <value stream="CLM_QIAN_WISO">2000</value>
       <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_START</value>
@@ -2678,6 +3088,7 @@
       <value stream="CLM1PT.1x1_mexicocityMEX">1993</value>
       <value stream="CLM1PT.1x1_vancouverCAN">1992</value>
       <value stream="CLM1PT.1x1_urbanc_alpha">0002</value>
+      <value stream="CLM1PT.1x1">$DATM_CLMNCEP_YR_END</value>
       <value stream="CLM1PT.CLM_USRDAT">$DATM_CLMNCEP_YR_END</value>
       <value stream="CPLHISTForcing">$DATM_CPLHIST_YR_END</value>
       <value stream="CLM_QIAN_WISO">2004  </value>
@@ -2743,6 +3154,69 @@
     <values>
       <value>0</value>
       <value stream="CORE_IAF_JRA.*.GISS.SWDN">-5400</value>
+      <value stream="CLM1PT.CLM_USRDAT.Solar">0</value>
+      <value stream="CLM1PT.CLM_USRDAT.Precip">5400</value>
+      <value stream="CLM1PT.CLM_USRDAT.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_ALP1.Solar">0</value>
+      <value stream="CLM1PT.1x1_ALP1.Precip">5400</value>
+      <value stream="CLM1PT.1x1_ALP1.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_ALP2.Solar">0</value>
+      <value stream="CLM1PT.1x1_ALP2.Precip">5400</value>
+      <value stream="CLM1PT.1x1_ALP2.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_ALP3.Solar">0</value>
+      <value stream="CLM1PT.1x1_ALP3.Precip">5400</value>
+      <value stream="CLM1PT.1x1_ALP3.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_ALP4.Solar">0</value>
+      <value stream="CLM1PT.1x1_ALP4.Precip">5400</value>
+      <value stream="CLM1PT.1x1_ALP4.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_SUB1.Solar">0</value>
+      <value stream="CLM1PT.1x1_SUB1.Precip">5400</value>
+      <value stream="CLM1PT.1x1_SUB1.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_SUB2.Solar">0</value>
+      <value stream="CLM1PT.1x1_SUB2.Precip">5400</value>
+      <value stream="CLM1PT.1x1_SUB2.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_SUB3.Solar">0</value>
+      <value stream="CLM1PT.1x1_SUB3.Precip">5400</value>
+      <value stream="CLM1PT.1x1_SUB3.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_SUB4.Solar">0</value>
+      <value stream="CLM1PT.1x1_SUB4.Precip">5400</value>
+      <value stream="CLM1PT.1x1_SUB4.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_BOR1.Solar">0</value>
+      <value stream="CLM1PT.1x1_BOR1.Precip">5400</value>
+      <value stream="CLM1PT.1x1_BOR1.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_BOR2.Solar">0</value>
+      <value stream="CLM1PT.1x1_BOR2.Precip">5400</value>
+      <value stream="CLM1PT.1x1_BOR2.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_BOR3.Solar">0</value>
+      <value stream="CLM1PT.1x1_BOR3.Precip">5400</value>
+      <value stream="CLM1PT.1x1_BOR3.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_BOR4.Solar">0</value>
+      <value stream="CLM1PT.1x1_BOR4.Precip">5400</value>
+      <value stream="CLM1PT.1x1_BOR4.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_LYG.Solar">0</value>
+      <value stream="CLM1PT.1x1_LYG.Precip">5400</value>
+      <value stream="CLM1PT.1x1_LYG.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_BUO.Solar">0</value>
+      <value stream="CLM1PT.1x1_BUO.Precip">5400</value>
+      <value stream="CLM1PT.1x1_BUO.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_HAV.Solar">0</value>
+      <value stream="CLM1PT.1x1_HAV.Precip">5400</value>
+      <value stream="CLM1PT.1x1_HAV.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_SKO.Solar">0</value>
+      <value stream="CLM1PT.1x1_SKO.Precip">5400</value>
+      <value stream="CLM1PT.1x1_SKO.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_VIKE.Solar">0</value>
+      <value stream="CLM1PT.1x1_VIKE.Precip">5400</value>
+      <value stream="CLM1PT.1x1_VIKE.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_JOAS.Solar">0</value>
+      <value stream="CLM1PT.1x1_JOAS.Precip">5400</value>
+      <value stream="CLM1PT.1x1_JOAS.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_LIAH.Solar">0</value>
+      <value stream="CLM1PT.1x1_LIAH.Precip">5400</value>
+      <value stream="CLM1PT.1x1_LIAH.TPQW">5400</value>
+      <value stream="CLM1PT.1x1_FINN.Solar">0</value>
+      <value stream="CLM1PT.1x1_FINN.Precip">5400</value>
+      <value stream="CLM1PT.1x1_FINN.TPQW">5400</value>
       <value stream="CPLHISTForcing.Solar">2700</value>
       <value stream="CPLHISTForcing.nonSolarFlux">900</value>
       <value stream="CPLHISTForcing.State3hr">900</value>
@@ -2985,7 +3459,48 @@
       <value stream="CLM1PT.1x1_mexicocityMEX">nearest</value>
       <value stream="CLM1PT.1x1_vancouverCAN">nearest</value>
       <value stream="CLM1PT.1x1_urbanc_alpha">nearest</value>
-      <value stream="CLM1PT.CLM_USRDAT">nearest</value>
+      <value stream="CLM1PT.CLM_USRDAT.Solar">coszen</value>
+      <value stream="CLM1PT.CLM_USRDAT.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_ALP1.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_ALP1.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_ALP2.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_ALP2.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_ALP3.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_ALP3.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_ALP4.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_ALP4.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_SUB1.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_SUB1.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_SUB2.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_SUB2.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_SUB3.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_SUB3.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_SUB4.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_SUB4.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_BOR1.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_BOR1.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_BOR2.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_BOR2.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_BOR3.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_BOR3.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_BOR4.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_BOR4.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_LYG.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_LYG.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_BUO.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_BUO.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_HAV.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_HAV.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_SKO.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_SKO.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_VIKE.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_VIKE.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_JOAS.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_JOAS.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_LIAH.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_LIAH.Precip">nearest</value>
+      <value stream="CLM1PT.1x1_FINN.Solar">coszen</value>
+      <value stream="CLM1PT.1x1_FINN.Precip">nearest</value>
       <value stream="CPLHISTForcing.Solar">nearest</value>
       <value stream="CPLHISTForcing.nonSolarFlux">nearest</value>
       <value stream="CPLHISTForcing.State3hr">linear</value>
@@ -3043,8 +3558,28 @@
       <value stream="co2tseries.20tr">extend</value>
       <value stream="co2tseries.omip">extend</value>
       <value stream="co2tseries.SSP">extend</value>
-      <value datm_mode="CLM1PT">extend</value>
+      <value datm_mode="CLM1PT">cycle</value>
       <value atm_grid="CLM_USRDAT">cycle</value>
+      <value atm_grid="1x1_ALP1">cycle</value>
+      <value atm_grid="1x1_ALP2">cycle</value>
+      <value atm_grid="1x1_ALP3">cycle</value>
+      <value atm_grid="1x1_ALP4">cycle</value>
+      <value atm_grid="1x1_SUB1">cycle</value>
+      <value atm_grid="1x1_SUB2">cycle</value>
+      <value atm_grid="1x1_SUB3">cycle</value>
+      <value atm_grid="1x1_SUB4">cycle</value>
+      <value atm_grid="1x1_BOR1">cycle</value>
+      <value atm_grid="1x1_BOR2">cycle</value>
+      <value atm_grid="1x1_BOR3">cycle</value>
+      <value atm_grid="1x1_BOR4">cycle</value>
+      <value atm_grid="1x1_LYG">cycle</value>
+      <value atm_grid="1x1_BUO">cycle</value>
+      <value atm_grid="1x1_HAV">cycle</value>
+      <value atm_grid="1x1_SKO">cycle</value>
+      <value atm_grid="1x1_VIKE">cycle</value>
+      <value atm_grid="1x1_JOAS">cycle</value>
+      <value atm_grid="1x1_LIAH">cycle</value>
+      <value atm_grid="1x1_FINN">cycle</value>
     </values>
   </entry>
 
