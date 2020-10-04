@@ -5,7 +5,7 @@ Library for saving build/run provenance.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import touch, gzip_existing_file, SharedArea, convert_to_babylonian_time, get_current_commit, indent_string, run_cmd, run_cmd_no_fail, safe_copy
+from CIME.utils import touch, gzip_existing_file, SharedArea, convert_to_babylonian_time, get_current_commit, get_current_submodule_status, indent_string, run_cmd, run_cmd_no_fail, safe_copy
 
 import tarfile, getpass, signal, glob, shutil, sys
 
@@ -31,23 +31,29 @@ def _get_batch_job_id_for_syslog(case):
     return None
 
 def _save_build_provenance_e3sm(case, lid):
-    cimeroot = case.get_value("CIMEROOT")
+    srcroot = case.get_value("SRCROOT")
     exeroot = case.get_value("EXEROOT")
     caseroot = case.get_value("CASEROOT")
 
     # Save git describe
     describe_prov = os.path.join(exeroot, "GIT_DESCRIBE.{}".format(lid))
-    desc = get_current_commit(tag=True, repo=cimeroot)
+    desc = get_current_commit(tag=True, repo=srcroot)
     with open(describe_prov, "w") as fd:
         fd.write(desc)
 
     # Save HEAD
-    headfile = os.path.join(cimeroot, ".git", "logs", "HEAD")
+    headfile = os.path.join(srcroot, ".git", "logs", "HEAD")
     headfile_prov = os.path.join(exeroot, "GIT_LOGS_HEAD.{}".format(lid))
     if os.path.exists(headfile_prov):
         os.remove(headfile_prov)
     if os.path.exists(headfile):
         safe_copy(headfile, headfile_prov, preserve_meta=False)
+
+    # Save git submodule status
+    submodule_prov = os.path.join(exeroot, "GIT_SUBMODULE_STATUS.{}".format(lid))
+    subm_status = get_current_submodule_status(recursive=True, repo=srcroot)
+    with open(submodule_prov, "w") as fd:
+        fd.write(subm_status)
 
     # Save SourceMods
     sourcemods = os.path.join(caseroot, "SourceMods")
@@ -67,7 +73,7 @@ def _save_build_provenance_e3sm(case, lid):
 
     # For all the just-created post-build provenance files, symlink a generic name
     # to them to indicate that these are the most recent or active.
-    for item in ["GIT_DESCRIBE", "GIT_LOGS_HEAD", "SourceMods", "build_environment"]:
+    for item in ["GIT_DESCRIBE", "GIT_LOGS_HEAD", "GIT_SUBMODULE_STATUS", "SourceMods", "build_environment"]:
         globstr = "{}/{}.{}*".format(exeroot, item, lid)
         matches = glob.glob(globstr)
         expect(len(matches) < 2, "Multiple matches for glob {} should not have happened".format(globstr))
@@ -137,7 +143,7 @@ def _save_prerun_timing_e3sm(case, lid):
     rundir = case.get_value("RUNDIR")
     blddir = case.get_value("EXEROOT")
     caseroot = case.get_value("CASEROOT")
-    cimeroot = case.get_value("CIMEROOT")
+    srcroot = case.get_value("SRCROOT")
     base_case = case.get_value("CASE")
     full_timing_dir = os.path.join(timing_dir, "performance_archive", getpass.getuser(), base_case, lid)
     if os.path.exists(full_timing_dir):
@@ -170,7 +176,7 @@ def _save_prerun_timing_e3sm(case, lid):
                 run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
                 gzip_existing_file(os.path.join(full_timing_dir, filename))
         elif mach in ["cori-haswell", "cori-knl"]:
-            for cmd, filename in [("sinfo -a -l", "sinfol"), ("sqs -f %s" % job_id, "sqsf_jobid"),
+            for cmd, filename in [("sinfo -a -l", "sinfol"), ("scontrol show jobid %s" % job_id, "sqsf_jobid"),
                                   # ("sqs -f", "sqsf"),
                                   ("squeue -o '%.10i %.15P %.20j %.10u %.7a %.2t %.6D %.8C %.10M %.10l %.20S %.20V'", "squeuef"),
                                   ("squeue -t R -o '%.10i %R'", "squeues")]:
@@ -239,7 +245,7 @@ def _save_prerun_timing_e3sm(case, lid):
             safe_copy(item, os.path.join(full_timing_dir, os.path.basename(item) + "." + lid), preserve_meta=False)
 
     # Save state of repo
-    from_repo = cimeroot if os.path.exists(os.path.join(cimeroot, ".git")) else os.path.dirname(cimeroot)
+    from_repo = srcroot if os.path.exists(os.path.join(srcroot, ".git")) else os.path.dirname(srcroot)
     desc = get_current_commit(tag=True, repo=from_repo)
     with open(os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), "w") as fd:
         fd.write(desc)
@@ -313,6 +319,12 @@ def _save_postrun_timing_e3sm(case, lid):
 
     shutil.rmtree(rundir_timing_dir)
 
+    atm_chunk_costs_src_path = os.path.join(rundir, "atm_chunk_costs.txt")
+    if os.path.exists(atm_chunk_costs_src_path):
+        atm_chunk_costs_dst_path = os.path.join(rundir, "atm_chunk_costs.{}".format(lid))
+        shutil.move(atm_chunk_costs_src_path, atm_chunk_costs_dst_path)
+        gzip_existing_file(atm_chunk_costs_dst_path)
+
     gzip_existing_file(os.path.join(caseroot, "timing", "e3sm_timing_stats.%s" % lid))
 
     # JGF: not sure why we do this
@@ -376,6 +388,7 @@ def _save_postrun_timing_e3sm(case, lid):
     globs_to_copy.append("logs/run_environment.txt.{}".format(lid))
     globs_to_copy.append(os.path.join(rundir, "e3sm.log.{}.gz".format(lid)))
     globs_to_copy.append(os.path.join(rundir, "cpl.log.{}.gz".format(lid)))
+    globs_to_copy.append(os.path.join(rundir, "atm_chunk_costs.{}.gz".format(lid)))
     globs_to_copy.append("timing/*.{}*".format(lid))
     globs_to_copy.append("CaseStatus")
 

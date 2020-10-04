@@ -21,9 +21,10 @@ module cime_comp_mod
   ! share code & libs
   !----------------------------------------------------------------------------
   use shr_kind_mod,      only: r8 => SHR_KIND_R8
+  use shr_kind_mod,      only: i8 => SHR_KIND_I8
   use shr_kind_mod,      only: cs => SHR_KIND_CS
   use shr_kind_mod,      only: cl => SHR_KIND_CL
-  use shr_sys_mod,       only: shr_sys_abort, shr_sys_flush
+  use shr_sys_mod,       only: shr_sys_abort, shr_sys_flush, shr_sys_irtc
   use shr_const_mod,     only: shr_const_cday
   use shr_file_mod,      only: shr_file_setLogLevel, shr_file_setLogUnit
   use shr_file_mod,      only: shr_file_setIO, shr_file_getUnit, shr_file_freeUnit
@@ -192,7 +193,9 @@ module cime_comp_mod
   private
 
   ! public data
-  public  :: timing_dir, mpicom_GLOID
+  public  :: timing_dir
+  public  :: mpicom_GLOID
+  public  :: mpi_init_time
 
   ! public routines
   public  :: cime_pre_init1
@@ -375,6 +378,7 @@ module cime_comp_mod
   real(r8)      :: cktime_acc(10)    ! cktime accumulator array 1 = all, 2 = atm, etc
   integer       :: cktime_cnt(10)    ! cktime counter array
   real(r8)      :: max_cplstep_time
+  real(r8)      :: mpi_init_time     ! time elapsed in mpi_init call
   character(CL) :: timing_file       ! Local path to tprof filename
   character(CL) :: timing_dir        ! timing directory
   character(CL) :: tchkpt_dir        ! timing checkpoint directory
@@ -444,6 +448,7 @@ module cime_comp_mod
 
   logical  :: areafact_samegrid      ! areafact samegrid flag
   logical  :: single_column          ! scm mode logical
+  logical  :: iop_mode               ! iop mode logical
   real(r8) :: scmlon                 ! single column lon
   real(r8) :: scmlat                 ! single column lat
   logical  :: aqua_planet            ! aqua planet mode
@@ -674,8 +679,18 @@ contains
     character(len=8) :: c_cpl_inst    ! coupler instance number
     character(len=8) :: c_cpl_npes    ! number of pes in coupler
 
+    integer(i8) :: beg_count          ! start time
+    integer(i8) :: end_count          ! end time
+    integer(i8) :: irtc_rate          ! factor to convert time to seconds
+    
+    beg_count = shr_sys_irtc(irtc_rate)
+    
     call mpi_init(ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_init')
+
+    end_count = shr_sys_irtc(irtc_rate)
+    mpi_init_time = real( (end_count-beg_count), r8)/real(irtc_rate, r8)
+    
     call mpi_comm_dup(MPI_COMM_WORLD, global_comm, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_dup')
 
@@ -1059,6 +1074,7 @@ contains
          esp_present=esp_present                   , &
          iac_present=iac_present                   , &
          single_column=single_column               , &
+         iop_mode=iop_mode                         , &
          aqua_planet=aqua_planet                   , &
          cpl_seq_option=cpl_seq_option             , &
          drv_threading=drv_threading               , &
@@ -1274,6 +1290,7 @@ contains
        call seq_comm_getinfo(OCNID(ens1), mpicom=mpicom_OCNID)
 
        call shr_scam_checkSurface(scmlon, scmlat, &
+            iop_mode,                             &
             OCNID(ens1), mpicom_OCNID,            &
             lnd_present=lnd_present,              &
             ocn_present=ocn_present,              &
@@ -1594,6 +1611,7 @@ contains
 
     if (atm_present) then
        if (lnd_prognostic) atm_c2_lnd = .true.
+       if (lnd_present   ) atm_c2_lnd = .true. ! needed for aream initialization
        if (rof_prognostic .and. rof_heat) atm_c2_rof = .true.
        if (ocn_prognostic) atm_c2_ocn = .true.
        if (ocn_present   ) atm_c2_ocn = .true. ! needed for aoflux calc if aoflux=ocn
@@ -2349,6 +2367,7 @@ contains
 108 format( A, f10.2, A, i8.8)
 109 format( A, 2f10.3)
 
+    call t_startf ('CPL:cime_run_init')
     hashint = 0
 
     call seq_infodata_putData(infodata,atm_phase=1,lnd_phase=1,ocn_phase=1,ice_phase=1)
@@ -2373,8 +2392,29 @@ contains
 
     ! --- Write out performance data for initialization
     call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod)
+#ifndef CPL_BYPASS
+    ! Report on memory usage
+    ! (For now, just look at the first instance of each component)
+    if ( iamroot_CPLID .or. &
+         ocn(ens1)%iamroot_compid .or. &
+         atm(ens1)%iamroot_compid .or. &
+         lnd(ens1)%iamroot_compid .or. &
+         ice(ens1)%iamroot_compid .or. &
+         glc(ens1)%iamroot_compid .or. &
+         wav(ens1)%iamroot_compid .or. &
+         iac(ens1)%iamroot_compid) then
+       call shr_mem_getusage(msize,mrss,.true.)
+
+       write(logunit,105) ' memory_write: model date = ',ymd,tod, &
+            ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
+            '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
+    endif
+#endif
+    ! Write out a timing file checkpoint
     write(timing_file,'(a,i8.8,a1,i5.5)') &
           trim(tchkpt_dir)//"/model_timing"//trim(cpl_inst_tag)//"_",ymd,"_",tod
+
+    call t_stopf ('CPL:cime_run_init')
 
     call t_set_prefixf("CPL:INIT_")
     call cime_write_performance_checkpoint(output_perf,timing_file,mpicom_GLOID)

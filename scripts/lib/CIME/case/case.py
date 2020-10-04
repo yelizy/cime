@@ -266,6 +266,7 @@ class Case(object):
         if not os.path.isdir(self._caseroot):
             # do not flush if caseroot wasnt created
             return
+
         for env_file in self._files:
             env_file.write(force_write=flushall)
 
@@ -459,15 +460,14 @@ class Case(object):
 
         self.set_lookup_value("COMP_INTERFACE", driver)
         if self._cime_model == 'ufs':
-            config = {}
-            if 'ufsatm' in compset_name:
-                config['component']='nems'
-            else:
-                config['component']='cpl'
-            comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL", attribute=config)
-
-        if self._cime_model == 'cesm':
+            ufs_driver = os.environ.get("UFS_DRIVER")
+            attribute = None
+            if ufs_driver:
+                attribute = {"component":"nems"}
+            comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL", attribute=attribute)
+        elif self._cime_model == 'cesm':
             comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL")
+
         if self._cime_model in ('cesm','ufs'):
             self.set_lookup_value("COMP_ROOT_DIR_CPL",comp_root_dir_cpl)
 
@@ -529,6 +529,9 @@ class Case(object):
             primary_component = "allactive"
         elif progcomps["LND"] and progcomps["OCN"] and progcomps["ICE"]:
             # this is a "J" compset
+            primary_component = "allactive"
+        elif progcomps["ATM"] and progcomps["OCN"] and progcomps["ICE"]:
+            # this is a ufs s2s compset
             primary_component = "allactive"
         elif progcomps["ATM"]:
             if "DOCN%SOM" in self._compsetname and progcomps["LND"]:
@@ -861,6 +864,7 @@ class Case(object):
         mach_pes_obj.add_comment(comment)
 
         if other is not None:
+            logger.info("setting additional fields from config_pes: {}".format(other))
             for key, value in other.items():
                 self.set_value(key, value)
 
@@ -930,7 +934,6 @@ class Case(object):
         grids = Grids(gridfile)
 
         gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname, driver=driver)
-
         self._gridname = gridinfo["GRID"]
         for key,value in gridinfo.items():
             logger.debug("Set grid {} {}".format(key,value))
@@ -1507,9 +1510,9 @@ directory, NOT in this subdirectory."""
             #   called if run_unsupported is False.
             tests = Testlist(tests_spec_file, files)
             testlist = tests.get_tests(compset=compset_alias, grid=grid_name, supported_only=True)
-            test_categories = ["prealpha", "prebeta", "test_release", "aux_"]
+            test_categories = ["prealpha", "prebeta", "test_release"]
             for test in testlist:
-                if test["category"] in test_categories \
+                if test["category"] in test_categories or "aux_" in test["category"] \
                    or get_cime_default_driver() in test["category"]:
                     testcnt += 1
         if testcnt > 0:

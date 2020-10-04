@@ -69,9 +69,6 @@ endif
 ifeq ($(strip $(USE_ALBANY)), TRUE)
    USE_CXX = TRUE
 endif
-ifeq ($(strip $(USE_KOKKOS)), TRUE)
-  USE_CXX = TRUE
-endif
 
 SLIBS ?= $(USER_SLIBS)
 
@@ -124,15 +121,17 @@ endif
 ifeq ($(COMP_INTERFACE), nuopc)
    CPPDEFS += -DNUOPC_INTERFACE
    ifneq ($(realpath $(INSTALL_SHAREDPATH)/lib/libstreams.a),)
-     FoX_LIBS := $(shell $(INSTALL_SHAREDPATH)/bin/FoX-config --libs)
-     SLIBS += -ldshr -lstreams $(FoX_LIBS)
+     # FoX libraries are provided and built by CDEPS
+     FoX_LIBS := -L$(SHAREDLIBROOT)/$(SHAREDPATH)/CDEPS/fox/lib -lFoX_dom -lFoX_sax -lFoX_common -lFoX_utils -lFoX_fsys
+     ULIBS += -ldshr -lstreams
+     SLIBS += $(FoX_LIBS)
    endif
 else
    CPPDEFS += -DMCT_INTERFACE
 endif
 
 ifeq ($(PIO_VERSION),2)
-  ifeq ($(CIME_MODEL),e3sm)
+  ifneq ($(COMPILER),nag)
     # Needed by SCORPIO not default PIO, does not work with NAG compiler
     USE_CXX := TRUE
   endif
@@ -267,13 +266,6 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
 
   # get the "ALBANY_LINK_LIBS" list as an env var
   include $(ALBANY_PATH)/export_albany.in
-endif
-
-ifeq ($(strip $(USE_KOKKOS)), TRUE)
-  include $(INSTALL_SHAREDPATH)/Makefile.kokkos
-  SLIBS += $(KOKKOS_LIBS)
-  CXXFLAGS += $(KOKKOS_CXXFLAGS)
-  CXX_LDFLAGS += $(KOKKOS_LDFLAGS)
 endif
 
 # Set MOAB info if it is being used
@@ -508,8 +500,8 @@ else
        # GCC needs to be able to link to
        # nagfor runtime to get autoconf
        # tests to work.
-         CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-         SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf62rts
+	 CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
+	 SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf62rts
        endif
     endif
   endif
@@ -553,13 +545,9 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 CFLAGS+=$(CPPDEFS)
 CXXFLAGS+=$(CPPDEFS)
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
-                MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
-                CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
-                LDFLAGS="$(LDFLAGS)"
-
-ifeq ($(MODEL), fox)
-  CONFIG_ARGS += --prefix="$(INSTALL_SHAREDPATH)"
-endif
+		MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
+		CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
+		LDFLAGS="$(LDFLAGS)"
 
 ifeq ($(NETCDF_SEPARATE), FALSE)
   CONFIG_ARGS += NETCDF_PATH=$(NETCDF_PATH)
@@ -580,14 +568,17 @@ ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
 endif
 
 COMP_ATM ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMP_ATM --value)
+CAM_DYCORE ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_DYCORE --value)
 ifeq ($(strip $(COMP_ATM)),cam)
-  CAM_DYCORE ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_DYCORE --value)
   ifeq ($(CAM_DYCORE),fv3)
     FV3CORE_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/atmos_cubed_sphere)
     INCLDIR+=-I$(FV3CORE_LIBDIR) -I$(FV3CORE_LIBDIR)/../ -I../$(INSTALL_SHAREDPATH)/include -I../$(CSM_SHR_INCLUDE) -I$(abspath $(EXEROOT)/FMS) -I$(CIMEROOT)/../libraries/FMS/src/include
   endif
 endif
 
+ifeq ($(CAM_DYCORE),mpas)
+MPAS_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/mpas)
+endif
 
 ifeq ($(MODEL),cam)
   # These RRTMG files take an extraordinarily long time to compile with optimization.
@@ -616,6 +607,29 @@ $(FV3CORE_LIBDIR)/libfv3core.a: $(EXEROOT)/FMS/libfms.a
 
 dyn_grid.o: $(FV3CORE_LIBDIR)/libfv3core.a
 endif
+
+ifdef MPAS_LIBDIR
+  ABS_INSTALL_SHAREDPATH = $(abspath $(INSTALL_SHAREDPATH))
+  ABS_ESMF_PATH = $(abspath $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE))
+  ifeq ($(PIO_VERSION),2)
+    PIODEF := -DUSE_PIO2
+  endif
+  INCLDIR+=-I$(MPAS_LIBDIR)
+  INCLDIR+=-I$(abspath $(EXEROOT)/atm/obj)
+
+# To ensure that the MPAS-A dycore library is always updated whenever dycore source
+# files are changed, the libmpas target here is declared as PHONY; under ideal circumstances
+# this isn't necessary, since libmpas should never be an actual file (the library that is created
+# is named libmpas.a), but adding the PHONY declaration provides an extra bit of safety
+.PHONY: libmpas
+libmpas: cam_abortutils.o physconst.o
+	$(MAKE) -C $(MPAS_LIBDIR) CC="$(CC)" FC="$(FC)" PIODEF="$(PIODEF)" FFLAGS='$(FREEFLAGS) $(FFLAGS)' \
+	FCINCLUDES='$(INCLDIR) $(INCS) -I$(ABS_INSTALL_SHAREDPATH)/include -I$(ABS_ESMF_PATH)/include'
+
+dyn_comp.o: libmpas
+dyn_grid.o: libmpas
+endif
+
 endif
 
 
@@ -685,10 +699,6 @@ endif
 # Drive configure scripts for support libraries (mct)
 #------------------------------------------------------------------------------
 
-$(SHAREDLIBROOT)/$(SHAREDPATH)/fox/arch.make:
-	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
-	$(CONFIG_SHELL) $(CIMEROOT)/src/externals/fox/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/src/externals/fox
-
 $(SHAREDLIBROOT)/$(SHAREDPATH)/mct/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
 	$(CONFIG_SHELL) $(CIMEROOT)/src/externals/mct/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/src/externals/mct
@@ -745,12 +755,12 @@ endif
 # doesn't seem to be able to differentiate between free & fixed
 # fortran flags)
 CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(EXTRA_PIO_FPPDEFS) $(INCLDIR)" \
-              -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(EXTRA_PIO_CPPDEFS) $(INCLDIR)" \
-              -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(EXTRA_PIO_CPPDEFS) $(INCLDIR)" \
-              -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-              -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
-              -D PIO_ENABLE_TESTS:BOOL=OFF \
-              -D PIO_USE_MALLOC:BOOL=ON \
+	      -D CMAKE_C_FLAGS:STRING="$(CFLAGS) $(EXTRA_PIO_CPPDEFS) $(INCLDIR)" \
+	      -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(EXTRA_PIO_CPPDEFS) $(INCLDIR)" \
+	      -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+	      -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
+	      -D PIO_ENABLE_TESTS:BOOL=OFF \
+	      -D PIO_USE_MALLOC:BOOL=ON \
 	      -D USER_CMAKE_MODULE_PATH:LIST="$(CIMEROOT)/src/CMake;$(CIMEROOT)/src/externals/pio2/cmake" \
 
 # Allow for separate installations of the NetCDF C and Fortran libraries
@@ -760,17 +770,25 @@ else ifeq ($(NETCDF_SEPARATE), TRUE)
   # NETCDF_Fortran_DIR points to the separate
   # installation of Fortran NetCDF for PIO
   CMAKE_OPTS += -D NetCDF_C_PATH:PATH=$(NETCDF_C_PATH) \
-                -D NetCDF_Fortran_PATH:PATH=$(NETCDF_FORTRAN_PATH)
+		-D NetCDF_Fortran_PATH:PATH=$(NETCDF_FORTRAN_PATH)
+endif
+
+ifdef ZLIB_PATH
+	CMAKE_OPTS += -D LIBZ_PATH:STRING="$(ZLIB_PATH)"
+endif
+
+ifdef SZIP_PATH
+	CMAKE_OPTS += -D SZIP_PATH:STRING="$(SZIP_PATH)"
 endif
 
 ifdef HDF5_PATH
-        CMAKE_OPTS += -D HDF5_PATH:STRING="$(HDF5_PATH)"
+	CMAKE_OPTS += -D HDF5_PATH:STRING="$(HDF5_PATH)"
 endif
 
 ifdef PNETCDF_PATH
 	CMAKE_OPTS += -D PnetCDF_PATH:STRING="$(PNETCDF_PATH)"
 else
-        CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
+	CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
 endif
 ifdef PIO_FILESYSTEM_HINTS
 	CMAKE_OPTS += -D PIO_FILESYSTEM_HINTS:STRING="$(PIO_FILESYSTEM_HINTS)"
@@ -789,9 +807,9 @@ ifndef CMAKE_ENV_VARS
   CMAKE_ENV_VARS :=
 endif
 CMAKE_ENV_VARS += CC=$(CC) \
-                  CXX=$(CXX) \
-                  FC=$(FC) \
-                  LDFLAGS="$(LDFLAGS)"
+		  CXX=$(CXX) \
+		  FC=$(FC) \
+		  LDFLAGS="$(LDFLAGS)"
 
 
 # We declare $(GLC_DIR)/Makefile to be a phony target so that cmake is
@@ -925,6 +943,10 @@ endif
 ifdef FV3CORE_LIBDIR
   ULIBDEP += $(FV3CORE_LIBDIR)/libfv3core.a
   ULIBDEP += $(EXEROOT)/FMS/libfms.a
+endif
+
+ifdef MPAS_LIBDIR
+  ULIBDEP += $(MPAS_LIBDIR)/libmpas.a
 endif
 
 ifndef CLIBS
