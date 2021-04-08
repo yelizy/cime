@@ -205,6 +205,7 @@
       <value datm_mode="CORE_IAF_JRA" >CORE_IAF_JRA.GCGCS.PREC,CORE_IAF_JRA.GISS.LWDN,CORE_IAF_JRA.GISS.SWDN,CORE_IAF_JRA.NCEP.Q_10,CORE_IAF_JRA.NCEP.SLP_,CORE_IAF_JRA.NCEP.T_10,CORE_IAF_JRA.NCEP.U_10,CORE_IAF_JRA.NCEP.V_10</value>
       <value datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.PREC.SOFS.DAILY,CORE2_IAF.LWDN.SOFS.DAILY,CORE2_IAF.SWDN.SOFS.DAILY,CORE2_IAF.SWUP.SOFS.DAILY,CORE2_IAF.SHUM.SOFS.6HOUR,CORE2_IAF.TBOT.SOFS.6HOUR,CORE2_IAF.U.SOFS.6HOUR,CORE2_IAF.V.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor</value>
       <value datm_mode="CPLHIST">CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,CPLHISTForcing.State3hr,CPLHISTForcing.State1hr</value>
+      <value datm_mode="ERA5">ERA5.Solar,ERA5.Precip,ERA5.TPQW</value>
     </values>
   </entry>
 
@@ -264,6 +265,7 @@
       <value stream="presaero.SSP">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
       <value stream="topo.cplhist">null</value>
+      <value stream="ERA5">/cluster/shared/noresm/inputdata_emerald/ERA5_forcing</value>
     </values>
   </entry>
 
@@ -360,6 +362,8 @@
       <value stream="presaero.SSP5-8.5">aerodep_clm_SSP585_b.e21.BSSP585cmip6.f09_g17.CMIP6-SSP5-8.5.001_2014-2101_monthly_0.9x1.25_c190419.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
       <value stream="topo.cplhist">null</value>
+      <!--<value stream="ERA5">domain.lnd.721x1440_era5.nc</value>-->
+      <value stream="ERA5">domain.lnd.141x161_era5_SBS.nc</value>
     </values>
   </entry>
 
@@ -465,6 +469,9 @@
       <value stream="presaero">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_DIR</value>
+      <value stream="ERA5.Solar">/cluster/shared/noresm/inputdata_emerald/ERA5_forcing/Solar</value>
+      <value stream="ERA5.Precip">/cluster/shared/noresm/inputdata_emerald/ERA5_forcing/Precip</value>
+      <value stream="ERA5.TPQW">/cluster/shared/noresm/inputdata_emerald/ERA5_forcing/TPHWL</value>
     </values>
   </entry>
 
@@ -534,6 +541,9 @@
       <value  stream="CORE2_IAF.TBOT.SOFS.6HOUR">SOFS.6hour.03-09.2010.nc</value>
       <value  stream="CORE2_IAF.U.SOFS.6HOUR">SOFS.6hour.03-09.2010.nc</value>
       <value  stream="CORE2_IAF.V.SOFS.6HOUR">SOFS.6hour.03-09.2010.nc</value>
+      <value  stream="ERA5.Solar">clmforc.ERA5.Solr.%ym.nc</value>
+      <value  stream="ERA5.Precip">clmforc.ERA5.Prec.%ym.nc</value>
+      <value  stream="ERA5.TPQW">clmforc.ERA5.TPQWL.%ym.nc</value>
 
       <!-- TODO: if necessary, update the file names: -->
       <value  stream="CORE2_IAF.GCGCS.PREC">
@@ -2579,6 +2589,21 @@
       <value stream="topo.observed">
         TOPO topo
       </value>
+      <value  stream="ERA5.Solar">
+        SSRD  swdn
+      </value>
+      <value  stream="ERA5.Precip">
+	TP    precn
+      </value>
+      <value  stream="ERA5.TPQW">
+        T2M   tbot
+        D2M   tdew
+        SP    pbot
+        U10   u
+        V10   v
+        WIND  wind
+        STRD  lwdn
+      </value>
     </values>
   </entry>
 
@@ -2620,6 +2645,7 @@
       <value stream="presaero.SSP">2015</value>
       <value stream="topo.observed">1</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_ALIGN</value>
+      <value stream="ERA5">$DATM_CLMNCEP_YR_ALIGN</value>
     </values>
   </entry>
 
@@ -2684,6 +2710,7 @@
       <value stream="presaero.cesm2_omip" datm_mode="CORE_IAF_JRA.*2018">1652</value> <!-- 1958-(6-1)*(2018-1958+1)-1 -->
       <value stream="topo.observed">1</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_START</value>
+      <value stream="ERA5">$DATM_CLMNCEP_YR_START</value>
     </values									>
   </entry>
 
@@ -2752,6 +2779,7 @@
       <value stream="presaero.cesm2_omip" datm_mode="CORE_IAF_JRA.*2018">2019</value> <!-- 2018+1 -->
       <value stream="topo.observed">1</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_END</value>
+      <value stream="ERA5">$DATM_CLMNCEP_YR_END</value>
     </values>
   </entry>
 
@@ -2769,6 +2797,9 @@
       <value stream="CPLHISTForcing.State1hr">900</value>
       <value stream="presaero.cplhist">0</value>
       <value stream="topo.cplhist">0</value>
+      <value stream="ERA5.Solar">0</value>
+      <value stream="ERA5.Precip">0</value>
+      <value stream="ERA5.TPQW">0</value>
     </values>
   </entry>
 
@@ -2837,6 +2868,7 @@
       <value datm_mode="CORE2_IAF">CORE2_IAF</value>
       <value datm_mode="CORE_IAF_JRA.*">CORE_IAF_JRA</value>
       <value datm_mode="CPLHIST">COPYALL</value>
+      <value datm_mode="ERA5">CLMNCEP</value>
     </values>
   </entry>
 
@@ -2952,6 +2984,7 @@
       <value stream="CLMGSWP3" atm_grid="hcru">copy</value>
       <value stream="CLMNLDAS2" atm_grid="0.125nldas2">copy</value>
       <value stream="co2tseries">nn</value>
+      <value datm_mode="ERA5">nn</value>
     </values>
   </entry>
 
@@ -3041,6 +3074,8 @@
       <value stream="topo.observed">lower</value>
       <value stream="CORE2_IAF.GISS.SWDN">coszen</value>
       <value stream="CORE_IAF_JRA.*.GISS.SWDN">coszen</value>
+      <value stream="ERA5.Solar">nearest</value>
+      <value stream="ERA5.Precip">nearest</value>
     </values>
   </entry>
 
