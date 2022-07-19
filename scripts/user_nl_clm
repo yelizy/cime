@@ -1,2 +1,3 @@
 fsurdat="/cluster/home/yeliz/myregionaldata/surfdata_0.25_SBS_hist_16pfts_Irrig_CMIP6_simyr1850_c191002.nc"
+finidat="/cluster/home/yeliz/myregionaldata/SBS_SpE5Spinup_2022_ctsm5.1.dev017.clm2.r.0049-01-01-00000.nc"
 hist_nhtfrq=-24
